@@ -1,0 +1,67 @@
+using Random
+
+# 4 topics x 3 systems: the same values as data/tiny.csv
+const SCORES = [
+    0.10 0.40 0.70
+    0.20 0.50 0.60
+    0.15 0.45 0.80
+    0.25 0.35 0.65
+]
+const NAMES = ["A", "B", "C"]
+const B = 2000
+
+@testset "randomized_tukey_hsd" begin
+    Random.seed!(1)
+    results = randomized_tukey_hsd(SCORES; B=B, systems=NAMES)
+
+    @testset "pairs" begin
+        @test length(results) == 3
+        @test [ (r.system1, r.system2) for r in results ] ==
+            [("A", "B"), ("A", "C"), ("B", "C")]
+    end
+
+    @testset "deterministic columns" begin
+        # A: 0.175, B: 0.425, C: 0.6875
+        @test [ r.mean1 for r in results ] ≈ [0.175, 0.175, 0.425]
+        @test [ r.mean2 for r in results ] ≈ [0.425, 0.6875, 0.6875]
+        @test [ r.difference for r in results ] ≈ [-0.25, -0.5125, -0.2625]
+    end
+
+    @testset "p-values" begin
+        p = [ r.pvalue for r in results ]
+        @test all(0 .<= p .<= 1)
+        # counts are integers out of B
+        @test all(x -> isinteger(x * B), p)
+        # same trial statistics for every pair, so a larger observed
+        # difference can never have a larger p-value
+        @test p[2] <= p[3] <= p[1]
+        # (A,C) is truly rare (about 0.005): well below 0.05 for B = 2000
+        @test p[2] < 0.05
+        @test p[1] > 0.1
+    end
+
+    @testset "identical systems always get p = 1" begin
+        X = hcat(SCORES, SCORES[:, 1])
+        r = randomized_tukey_hsd(X; B=100, systems=["A", "B", "C", "A2"])
+        i = findfirst(x -> (x.system1, x.system2) == ("A", "A2"), r)
+        @test r[i].difference == 0
+        @test r[i].pvalue == 1
+    end
+
+    @testset "default system names are column numbers" begin
+        r = randomized_tukey_hsd(SCORES; B=10)
+        @test (r[1].system1, r[1].system2) == (1, 2)
+    end
+
+    @testset "input is not modified" begin
+        X = copy(SCORES)
+        randomized_tukey_hsd(X; B=50)
+        @test X == SCORES
+    end
+
+    @testset "argument checks" begin
+        @test_throws ArgumentError randomized_tukey_hsd(SCORES; B=0)
+        @test_throws ArgumentError randomized_tukey_hsd(SCORES[:, 1:1]; B=10)
+        @test_throws DimensionMismatch randomized_tukey_hsd(SCORES; B=10, systems=["A", "B"])
+    end
+end
