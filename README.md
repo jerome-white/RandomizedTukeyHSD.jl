@@ -11,8 +11,19 @@ are shuffled across systems within every topic, and the largest minus
 the smallest system mean is recorded. A pair's p-value is the fraction
 of trials whose range is at least the pair's observed difference.
 
-**Status:** under construction. The command-line script in `bin/` works
-and the library module is empty; see the open issues for the plan.
+**Status:** under construction; see the open issues for the plan.
+
+## Using the library
+
+```julia
+using RandomizedTukeyHSD
+
+# scores: a topics × systems matrix
+results = randomized_tukey_hsd(scores; B=10_000, systems=["A", "B", "C"])
+```
+
+`results` has one named tuple per pair of systems with the fields
+`system1`, `system2`, `mean1`, `mean2`, `difference` and `pvalue`.
 
 ## Layout
 
@@ -25,13 +36,13 @@ and the library module is empty; see the open issues for the plan.
 ## Running the CLI
 
 Input is tidy CSV on stdin with `topic`, `system` and `score` columns.
+The CLI needs Julia 1.11 or newer, because `bin/Project.toml` points at
+the library with a `[sources]` path entry.
 
 ```bash
 julia --project=bin -e 'using Pkg; Pkg.instantiate()'
 julia --project=bin bin/rthsd.jl --B 10000 < scores.csv
 ```
 
-The script is currently single-threaded only. Running it with more than
-one thread (`-t 2`, `-t auto`) crashes with a `BoundsError`, because it
-indexes per-thread state by `threadid()`, which on recent Julia versions
-can exceed `nthreads()`. This is tracked in #6.
+Add `-t N` (or `-t auto`) to use more threads. The threading design is
+still being reworked (#6).
