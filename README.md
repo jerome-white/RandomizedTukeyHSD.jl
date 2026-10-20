@@ -27,7 +27,10 @@ Input is tidy CSV on stdin with `topic`, `system` and `score` columns.
 
 ```bash
 julia --project=bin -e 'using Pkg; Pkg.instantiate()'
-julia --project=bin -t auto bin/rthsd.jl --B 10000 < scores.csv
+julia --project=bin bin/rthsd.jl --B 10000 < scores.csv
 ```
 
-`-t auto` is needed to use more than one thread.
+The script is currently single-threaded only. Running it with more than
+one thread (`-t 2`, `-t auto`) crashes with a `BoundsError`, because it
+indexes per-thread state by `threadid()`, which on recent Julia versions
+can exceed `nthreads()`. This is tracked in #6.
