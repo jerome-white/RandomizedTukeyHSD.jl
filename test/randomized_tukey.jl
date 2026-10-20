@@ -10,6 +10,12 @@ const SCORES = [
 const NAMES = ["A", "B", "C"]
 const B = 2000
 
+@testset "_pairs" begin
+    @test RandomizedTukeyHSD._pairs(2) == [(1, 2)]
+    @test RandomizedTukeyHSD._pairs(4) ==
+        [(1, 2), (1, 3), (1, 4), (2, 3), (2, 4), (3, 4)]
+end
+
 @testset "randomized_tukey_hsd" begin
     Random.seed!(1)
     results = randomized_tukey_hsd(SCORES; B=B, systems=NAMES)
