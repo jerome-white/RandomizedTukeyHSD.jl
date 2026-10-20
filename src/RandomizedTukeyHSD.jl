@@ -25,19 +25,39 @@ and `pvalue`. A vector of named tuples is a Tables.jl table.
 function randomized_tukey_hsd(scores::AbstractMatrix{<:Real};
                               B::Integer,
                               systems::AbstractVector=axes(scores, 2))
-    (ntopics, nsystems) = size(scores)
+    nsystems = size(scores, 2)
 
     B > 0 || throw(ArgumentError("B must be positive, got $B"))
     nsystems > 1 || throw(ArgumentError("need at least two systems"))
     length(systems) == nsystems ||
         throw(DimensionMismatch("$(length(systems)) system names for $nsystems systems"))
 
+    return _randomized_tukey_hsd(scores, B, systems)
+end
+
+# All pairs (j, k) with j < k, in the order (1,2), (1,3), ..., (n-1,n).
+function _pairs(n)
+    pairs = Tuple{Int,Int}[]
+    sizehint!(pairs, n * (n - 1) ÷ 2)
+
+    for j in 1:n-1
+        for k in j+1:n
+            push!(pairs, (j, k))
+        end
+    end
+
+    return pairs
+end
+
+function _randomized_tukey_hsd(scores, B, systems)
+    (ntopics, nsystems) = size(scores)
+
     #
     # system means and observed differences
     #
     sysmeans = vec(mean(scores; dims=1))
-    pairs = [ (j, k) for j in 1:nsystems-1 for k in j+1:nsystems ]
-    observed = Dict(p => abs(sysmeans[p[1]] - sysmeans[p[2]]) for p in pairs)
+    comparisons = _pairs(nsystems)
+    observed = Dict(p => abs(sysmeans[p[1]] - sysmeans[p[2]]) for p in comparisons)
 
     #
     # initialize counts
@@ -61,22 +81,26 @@ function randomized_tukey_hsd(scores::AbstractMatrix{<:Real};
 
         m = mean(ptr; dims=2)
         d = maximum(m) - minimum(m)
-        for (j, k) in pairs
+        for (j, k) in comparisons
             if d >= observed[(j, k)]
                 counts[j,k,this] += 1
             end
         end
     end
 
-    return [
+    #
+    # report
+    #
+    results = map(comparisons) do (j, k)
         (system1=systems[j],
          system2=systems[k],
          mean1=sysmeans[j],
          mean2=sysmeans[k],
          difference=sysmeans[j] - sysmeans[k],
          pvalue=sum(counts[j,k,:]) / B)
-        for (j, k) in pairs
-    ]
+    end
+
+    return results
 end
 
 end
