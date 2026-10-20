@@ -1,9 +1,9 @@
 # RandomizedTukeyHSD.jl
 
 A Julia implementation of the randomized Tukey HSD test for comparing
-many systems over a shared set of topics, as described by Carterette
-(2012) and advocated by Tetsuya Sakai in [*Laboratory Experiments in
-Information Retrieval*](http://sakailab.com/leirbook/).
+many systems over a shared set of topics. The method is described by
+Carterette ([2012](10.1145/2094072.2094076)) and advocated by Sakai
+([2018](https://doi.org/10.1007/978-981-13-1199-4_4)).
 
 The test needs no normality assumption. In each of B trials the scores
 are shuffled across systems within every topic, and the largest minus
