@@ -8,4 +8,5 @@ include("helpers.jl")
     include("reference.jl")
     include("threads.jl")
     include("tables.jl")
+    include("input.jl")
 end

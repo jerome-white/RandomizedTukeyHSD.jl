@@ -6,6 +6,8 @@ using Base.Threads
 
 export randomized_tukey_hsd
 
+include("input.jl")
+
 """
     randomized_tukey_hsd([rng,] scores; B, systems=axes(scores, 2))
 
