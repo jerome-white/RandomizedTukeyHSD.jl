@@ -77,12 +77,15 @@ end
         @test randomized_tukey_hsd(SCORES; B=500, rng=Random.default_rng()) ==
             expected
 
-        # an explicit rng leaves the global one alone
-        Random.seed!(3)
-        before = rand()
-        Random.seed!(3)
-        run(Xoshiro(1))
-        @test rand() == before
+        # an explicit rng leaves the global one alone; before Julia 1.10
+        # creating a task advances the creator's generator, whatever `rng`
+        if VERSION >= v"1.10"
+            Random.seed!(3)
+            before = rand()
+            Random.seed!(3)
+            run(Xoshiro(1))
+            @test rand() == before
+        end
     end
 
     @testset "default system names are column numbers" begin
