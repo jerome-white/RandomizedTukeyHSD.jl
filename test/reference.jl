@@ -86,3 +86,18 @@ end
         @test abs(r.pvalue - p) <= tolerance(p, B)
     end
 end
+
+# p-values do not depend on the unit the scores are in, so the tolerance has
+# to scale with them. A fixed absolute tolerance would treat every pair of
+# scores of order 1e-9 as equal, and be negligible next to ones of order 1e9.
+@testset "scale invariance" for scale in (1e-9, 1e9)
+    (scores, systems) = read_scores(joinpath(DATA, "tiny.csv"))
+    exact = exact_pvalues(scores)
+
+    Random.seed!(1)
+    results = randomized_tukey_hsd(scale .* scores; B=TRIALS, systems=systems)
+
+    for (r, p) in zip(results, exact)
+        @test abs(r.pvalue - p) <= tolerance(p, TRIALS)
+    end
+end
