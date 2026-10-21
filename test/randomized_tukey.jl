@@ -62,6 +62,32 @@ end
         @test r[1].pvalue == 1
     end
 
+    @testset "rng" begin
+        run(rng) = randomized_tukey_hsd(SCORES; B=500, rng=rng)
+
+        # the same state gives the same p-values; another seed does not
+        @test run(Xoshiro(1)) == run(Xoshiro(1))
+        @test run(Xoshiro(1)) != run(Xoshiro(2))
+        @test run(MersenneTwister(1)) == run(MersenneTwister(1))
+
+        # the default is the global generator
+        Random.seed!(3)
+        expected = randomized_tukey_hsd(SCORES; B=500)
+        Random.seed!(3)
+        @test randomized_tukey_hsd(SCORES; B=500, rng=Random.default_rng()) ==
+            expected
+
+        # an explicit rng leaves the global one alone; before Julia 1.10
+        # creating a task advances the creator's generator, whatever `rng`
+        if VERSION >= v"1.10"
+            Random.seed!(3)
+            before = rand()
+            Random.seed!(3)
+            run(Xoshiro(1))
+            @test rand() == before
+        end
+    end
+
     @testset "default system names are column numbers" begin
         r = randomized_tukey_hsd(SCORES; B=10)
         @test (r[1].system1, r[1].system2) == (1, 2)

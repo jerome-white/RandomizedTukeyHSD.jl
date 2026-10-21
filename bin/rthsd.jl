@@ -2,6 +2,7 @@ using
     CSV,
     ArgParse,
     DataFrames,
+    Random,
     RandomizedTukeyHSD
 
 function cliargs()
@@ -12,6 +13,10 @@ function cliargs()
         help = "Number of replications"
         arg_type = Int
         required = true
+
+        "--seed"
+        help = "Seed for the random number generator (default: unseeded)"
+        arg_type = Int
 
         "--missing"
         help = "Topics with a missing or NaN score: error or drop"
@@ -59,16 +64,22 @@ end
 # size of the space of arrangements, in logs: it does not fit in an Int
 # (or a Float64) for realistic numbers of systems and topics
 #
-log10_arrangements = nrow(df) * sum(log10, 2:ncol(df); init=0.0)
-@info "Trials against arrangements" B=args["B"] log10_arrangements=round(
-    log10_arrangements; digits=2)
+perms = sum(log10, 2:ncol(df); init=0.0)
+log10_arrangements = round(nrow(df) * perms; digits=2)
 
 #
 # begin!
 #
+seed = args["seed"]
+rng = seed === nothing ? Random.default_rng() : Xoshiro(seed)
+
+chunk = RandomizedTukeyHSD.CHUNK
+@info "Settings" B=args["B"] seed chunk log10_arrangements
+
 results = randomized_tukey_hsd(Matrix{Float64}(df);
                                B=args["B"],
-                               systems=names(df))
+                               systems=names(df),
+                               rng=rng)
 
 #
 # report
