@@ -17,6 +17,14 @@ the smallest system mean is recorded. A pair's p-value is the fraction
 of trials whose range is at least the pair's observed absolute
 difference in means.
 
+The comparison is a plain `>=` on floating-point numbers. A permuted range
+that is mathematically equal to the observed difference can differ from it
+in the last bits and then does not count, which makes a p-value slightly
+too small. This matters for scores on a coarse grid with few topics (for
+example 0.3935 instead of 0.4028 for one pair of the four-topic fixture in
+`test/data/tiny.csv`) and is negligible for many topics with continuous
+scores. See issue #17.
+
 `systems` names the columns of `scores`. Returns one named tuple per
 pair of systems, in the order (1,2), (1,3), ..., (n-1,n), with fields
 `system1`, `system2`, `mean1`, `mean2`, `difference` (`mean1 - mean2`)
