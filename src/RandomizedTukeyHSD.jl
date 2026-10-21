@@ -29,8 +29,10 @@ function randomized_tukey_hsd(scores::AbstractMatrix{<:Real};
 
     B > 0 || throw(ArgumentError("B must be positive, got $B"))
     nsystems > 1 || throw(ArgumentError("need at least two systems"))
-    length(systems) == nsystems ||
-        throw(DimensionMismatch("$(length(systems)) system names for $nsystems systems"))
+    if length(systems) != nsystems
+        msg = "$(length(systems)) system names for $nsystems systems"
+        throw(DimensionMismatch(msg))
+    end
 
     return _randomized_tukey_hsd(scores, B, systems)
 end
@@ -38,7 +40,6 @@ end
 # All pairs (j, k) with j < k, in the order (1,2), (1,3), ..., (n-1,n).
 function _pairs(n)
     pairs = Tuple{Int,Int}[]
-    sizehint!(pairs, n * (n - 1) ÷ 2)
 
     for j in 1:n-1
         for k in j+1:n
@@ -57,7 +58,9 @@ function _randomized_tukey_hsd(scores, B, systems)
     #
     sysmeans = vec(mean(scores; dims=1))
     comparisons = _pairs(nsystems)
-    observed = Dict(p => abs(sysmeans[p[1]] - sysmeans[p[2]]) for p in comparisons)
+    observed = Dict(
+        (j, k) => abs(sysmeans[j] - sysmeans[k]) for (j, k) in comparisons
+    )
 
     #
     # initialize counts

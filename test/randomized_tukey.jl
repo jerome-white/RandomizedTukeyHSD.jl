@@ -68,6 +68,8 @@ end
     @testset "argument checks" begin
         @test_throws ArgumentError randomized_tukey_hsd(SCORES; B=0)
         @test_throws ArgumentError randomized_tukey_hsd(SCORES[:, 1:1]; B=10)
-        @test_throws DimensionMismatch randomized_tukey_hsd(SCORES; B=10, systems=["A", "B"])
+        @test_throws DimensionMismatch randomized_tukey_hsd(
+            SCORES; B=10, systems=["A", "B"]
+        )
     end
 end
