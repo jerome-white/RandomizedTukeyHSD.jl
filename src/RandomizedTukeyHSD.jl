@@ -58,8 +58,34 @@ function _pairs(n)
     return pairs
 end
 
-function _randomized_tukey_hsd(scores, B, systems)
+# Trials per task. The random stream depends on this value, so changing
+# it changes the results for a fixed seed.
+const CHUNK = 64
+
+# Fill `ranges` with the range of the system means of that many trials.
+function _trials!(ranges, scores, seed)
     (ntopics, nsystems) = size(scores)
+    rng = Xoshiro(seed)
+
+    data = Matrix{Float64}(undef, nsystems, ntopics)
+    data .= transpose(scores)
+    sums = Matrix{Float64}(undef, nsystems, 1)
+
+    for i in eachindex(ranges)
+        for col in eachcol(data)
+            shuffle!(rng, col)
+        end
+
+        sum!(sums, data)
+        sums ./= ntopics
+        ranges[i] = maximum(sums) - minimum(sums)
+    end
+
+    return nothing
+end
+
+function _randomized_tukey_hsd(scores, B, systems)
+    nsystems = size(scores, 2)
 
     #
     # system means
@@ -68,32 +94,18 @@ function _randomized_tukey_hsd(scores, B, systems)
     comparisons = _pairs(nsystems)
 
     #
-    # create views of the data
+    # largest minus smallest system mean of every trial; trials are cut
+    # into chunks that depend only on B, each with its own seed, so the
+    # ranges do not depend on the number of threads
     #
-    # threadid() can exceed nthreads() (the interactive thread comes
-    # first), so size the per-thread state by the largest possible id
-    workers = Threads.maxthreadid()
-    data = Array{Float64}(undef, nsystems, ntopics, workers)
-    data .= transpose(scores)
-    sums = Array{Float64}(undef, nsystems, 1, workers)
-
-    #
-    # largest minus smallest system mean of every trial
-    #
+    nchunks = cld(B, CHUNK)
+    seeds = rand(UInt64, nchunks)
     ranges = Vector{Float64}(undef, B)
 
-    @threads for i in 1:B
-        this = threadid()
-        ptr = view(data, :, :, this)
-        m = view(sums, :, :, this)
-
-        for col in eachcol(ptr)
-            shuffle!(col)
-        end
-
-        sum!(m, ptr)
-        m ./= ntopics
-        ranges[i] = maximum(m) - minimum(m)
+    @sync for chunk in 1:nchunks
+        start = (chunk - 1) * CHUNK + 1
+        stop = min(chunk * CHUNK, B)
+        @spawn _trials!(view(ranges, start:stop), scores, seeds[chunk])
     end
     sort!(ranges)
 
