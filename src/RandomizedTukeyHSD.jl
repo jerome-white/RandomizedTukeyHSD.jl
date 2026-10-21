@@ -21,6 +21,9 @@ difference in means.
 pair of systems, in the order (1,2), (1,3), ..., (n-1,n), with fields
 `system1`, `system2`, `mean1`, `mean2`, `difference` (`mean1 - mean2`)
 and `pvalue`. A vector of named tuples is a Tables.jl table.
+
+Warns if `scores` contains `NaN`: one `NaN` makes every p-value
+meaningless, including those of pairs that do not involve its system.
 """
 function randomized_tukey_hsd(scores::AbstractMatrix{<:Real};
                               B::Integer,
@@ -32,6 +35,11 @@ function randomized_tukey_hsd(scores::AbstractMatrix{<:Real};
     if length(systems) != nsystems
         msg = "$(length(systems)) system names for $nsystems systems"
         throw(DimensionMismatch(msg))
+    end
+
+    nans = count(isnan, scores)
+    if nans > 0
+        @warn "scores contain $nans NaN values; p-values are not meaningful"
     end
 
     return _randomized_tukey_hsd(scores, B, systems)
