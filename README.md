@@ -59,29 +59,54 @@ the errors it throws.
 
 ```bash
 julia --project=bin -e 'using Pkg; Pkg.instantiate()'
-julia --project=bin bin/rthsd.jl --trials 10000 < scores.csv > results.csv
+julia --project=bin bin/rthsd.jl --trials 10000 scores.csv > results.csv
 ```
 
-**Input** is tidy CSV on stdin with `topic`, `system` and `score`
-columns, one row per topic and system:
+The input is a file argument, or stdin if it is missing or `-`.
+
+**Tidy input** (the default) has one row per block and treatment. The
+columns are chosen so that you do not have to rename yours:
+
+- `--block`, `--treatment` and `--value` name them;
+- left out, a role takes the column called `topic`, `system` or `score`;
+- if that still leaves a role open and the file has exactly three
+  columns, the unused ones are taken in the order block, treatment, value.
 
 ```
-topic,system,score
-t1,A,0.10
-t1,B,0.40
-t2,A,0.20
+dataset,model,accuracy
+d1,A,0.81
+d1,B,0.78
+d2,A,0.90
 ...
 ```
+
+**Wide input** (`--format wide`) has one row per block and one column per
+treatment, the header naming the treatments. `--block NAME` names a column,
+such as an id, to leave out; every other column is a treatment.
+
+```
+dataset,A,B,C
+d1,0.81,0.78,0.80
+d2,0.90,0.86,0.91
+...
+```
+
+In both forms an empty cell, a missing row or a `NaN` is a missing score
+(see [Missing scores](#missing-scores)).
 
 **Output** is CSV on stdout with the columns `S1_name`, `S2_name`,
 `S1_mean`, `S2_mean`, `difference` and `pvalue`, one row per pair. The
 settings used are logged to stderr.
 
-| Option        | Meaning                                         |
-|---------------|-------------------------------------------------|
-| `--trials N`  | number of trials; required (`-n`, or `--B`)     |
-| `--seed N`    | seed for the generator; otherwise runs differ   |
-| `--missing M` | `error` (default) or `drop`; see below          |
+| Option          | Meaning                                         |
+|-----------------|-------------------------------------------------|
+| `--trials N`    | number of trials; required (`-n`, or `--B`)     |
+| `--seed N`      | seed for the generator; otherwise runs differ   |
+| `--format F`    | `tidy` (default) or `wide`                      |
+| `--block C`     | block column (tidy), or a column to skip (wide) |
+| `--treatment C` | treatment column (tidy only)                    |
+| `--value C`     | score column (tidy only)                        |
+| `--missing M`   | `error` (default) or `drop`; see below          |
 
 ## Missing scores
 
@@ -106,7 +131,7 @@ different topics, which defeats the point of the test.
 Add `-t N` (or `-t auto`) to use more threads:
 
 ```bash
-julia -t auto --project=bin bin/rthsd.jl --trials 100000 < scores.csv
+julia -t auto --project=bin bin/rthsd.jl --trials 100000 scores.csv
 ```
 
 The trials are cut into chunks of 64, whichever number of threads is used.
@@ -125,7 +150,7 @@ the same. The CLI takes `--seed`, and prints the settings it used (`trials`,
 the seed) to stderr:
 
 ```bash
-julia --project=bin bin/rthsd.jl --trials 100000 --seed 1 < scores.csv
+julia --project=bin bin/rthsd.jl --trials 100000 --seed 1 scores.csv
 ```
 
 Without `--seed` the generator is not seeded and each run differs.
