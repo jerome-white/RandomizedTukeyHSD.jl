@@ -25,15 +25,15 @@ function environment()
     println("- Load average: ", join(round.(Sys.loadavg(); digits=2), " "))
 end
 
-function measure(nsystems, ntopics, B)
+function measure(nsystems, ntopics, trials)
     rng = Xoshiro(nsystems * 1_000_000 + ntopics)
     scores = rand(rng, ntopics, nsystems)
 
     # compile and warm up outside the measurement
-    randomized_tukey_hsd(scores; B=10)
+    randomized_tukey_hsd(scores; trials=10)
 
     return @benchmark(
-        randomized_tukey_hsd($scores; B=$B),
+        randomized_tukey_hsd($scores; trials=$trials),
         samples=10,
         seconds=60,
         evals=1
@@ -43,19 +43,19 @@ end
 function main()
     environment()
     println()
-    println("| systems | topics | B | median (ms) | us/trial | ",
+    println("| systems | topics | trials | median (ms) | us/trial | ",
             "min (ms) | MiB | allocs |")
     println("|--:|--:|--:|--:|--:|--:|--:|--:|")
 
-    for nsystems in SYSTEMS, ntopics in TOPICS, B in TRIALS
-        trial = measure(nsystems, ntopics, B)
+    for nsystems in SYSTEMS, ntopics in TOPICS, trials in TRIALS
+        trial = measure(nsystems, ntopics, trials)
         median_ns = time(median(trial))
         @printf("| %d | %d | %d | %.1f | %.2f | %.1f | %.1f | %d |\n",
                 nsystems,
                 ntopics,
-                B,
+                trials,
                 median_ns / 1e6,
-                median_ns / 1e3 / B,
+                median_ns / 1e3 / trials,
                 time(minimum(trial)) / 1e6,
                 trial.memory / 2^20,
                 trial.allocs)
