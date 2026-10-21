@@ -62,10 +62,11 @@ they test the method and not the arithmetic.
 
 - `ties.csv`: 4 topics × 3 systems with tied scores.
 - `distinct.csv`: 4 topics × 3 systems, no ties within a topic.
-- `tiny.csv`: multiples of 0.05. Not used as a passing reference, because
-  its scores trigger the floating-point behaviour in issue #17; it is used
-  for the `@test_broken` that documents it. Sakai's code gives the
-  mathematical value 0.4028 for the A–B pair there, the library 0.3935.
+- `tiny.csv`: multiples of 0.05, so some permuted ranges equal an observed
+  difference mathematically but not in floating point. It documents the
+  known limitation in issue #17: Sakai's code gives the mathematical value
+  0.4028 for the A–B pair, the library (plain `>=`) converges to 0.3935,
+  and the tests check both facts.
 
 ## Tolerance
 
