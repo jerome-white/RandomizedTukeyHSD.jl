@@ -1,8 +1,7 @@
 # Reference data
 
-`test/reference.jl` checks the library against two independent references on
-problems small enough to enumerate. This directory holds what is needed to
-regenerate the second one.
+`test/reference.jl` checks the library against two references that do not
+share its code, on problems small enough to enumerate.
 
 ## Exact p-values
 
@@ -12,45 +11,68 @@ and counts those whose range of system means is at least each pair's observed
 absolute difference. There is no Monte Carlo error, so the library has to
 match it to within its own standard error.
 
-## Python reference
+## Sakai's implementation
 
-`../data/generic_python.csv` and `../data/ties_python.csv` are the output of
-the Python `RandomisedTukey` implementation in the original sakai-book
-repository, run on `../data/generic.csv` and `../data/ties.csv`:
+The randomised Tukey HSD test in Tetsuya Sakai's own tools is **Discpower**
+(C plus shell and awk), listed on <https://sakailab.com/download/> and
+distributed from the NTCIR tools page as
+<http://research.nii.ac.jp/ntcir/tools/Discpower160507.tar.gz>.
+
+`sakai_reference.sh` downloads it (checking the SHA-256 recorded in the
+script), builds it in a temporary directory, and writes
+`system1,system2,difference,p` for a tidy CSV:
 
 ```bash
 cd test/reference
-PYTHONPATH=/path/to/sakai-book python3 python_reference.py \
-    ../data/generic.csv 1000000 8 > ../data/generic_python.csv
-PYTHONPATH=/path/to/sakai-book python3 python_reference.py \
-    ../data/ties.csv 1000000 8 > ../data/ties_python.csv
+sh sakai_reference.sh ../data/ties.csv > ../data/ties_sakai.csv
+sh sakai_reference.sh ../data/distinct.csv > ../data/distinct_sakai.csv
+sh sakai_reference.sh ../data/tiny.csv > ../data/tiny_sakai.csv
 ```
 
-Each takes a minute or two on 8 cores. The committed files were produced on
-2026-10-21 with sakai-book at `ce9f63d`, Python 3.13.2, numpy 2.2.5 and
-scipy 1.15.3, with B = 1 000 000.
+It needs `curl`, `make`, a C compiler, `awk` and Julia, and takes a few
+seconds per fixture. The committed files were produced on 2026-10-21.
 
-`python_reference.py` exists because `chapters/04/rthsd.py` cannot be used
-for this on macOS: it has no `if __name__ == '__main__'` guard, so with the
-`spawn` start method every worker re-runs the script, which then waits on
-stdin and never finishes.
+How it uses Sakai's code:
+
+- His C program `permmat2maxmin` is fed **every** within-topic arrangement
+  (written by `arrangements.jl`) instead of random permutations, so the
+  p-values are exact and need no Monte Carlo tolerance.
+- The p-value is computed with the rule from his `Random-test` script
+  (`$4 >= diff { count++ }`, with the system means printed by awk), copied
+  into the shell script.
+- **His shuffling is not exercised.** It sorts awk `rand()` keys, which is
+  unseeded and slow (one process per matrix cell; he recommends B between
+  1000 and 5000).
+
+One change was needed to build it: the 2011 K&R `main()` is rejected by
+current compilers, so the Makefile is edited to build with `-std=gnu89`.
+Discpower carries no licence, so its source is fetched on demand and not
+redistributed here; only its output is committed.
+
+Its README states that a range equal to the observed difference counts
+("ordinary"), but the code does not always achieve it: on other data its
+floating-point comparison can miss those trials. See issue #17.
 
 ## The fixtures
 
-- `generic.csv`: 4 topics × 3 systems with irregular decimals.
-- `ties.csv`: 4 topics × 3 systems with tied scores, all multiples of 0.25
-  (exactly representable, with an exactly representable mean over 4 topics).
+Scores in `ties.csv` and `distinct.csv` are multiples of 0.25 and 0.0625 with
+4 topics, so sums and means are exactly representable and print exactly in
+six decimals. That keeps floating-point rounding out of both references, so
+they test the method and not the arithmetic.
+
+- `ties.csv`: 4 topics × 3 systems with tied scores.
+- `distinct.csv`: 4 topics × 3 systems, no ties within a topic.
 - `tiny.csv`: multiples of 0.05. Not used as a passing reference, because
   its scores trigger the floating-point behaviour in issue #17; it is used
-  for the `@test_broken` that documents it.
-
-`generic.csv` and `ties.csv` give the same exact p-values with or without a
-floating-point tolerance, so they test the algorithm and not the rounding.
+  for the `@test_broken` that documents it. Sakai's code gives the
+  mathematical value 0.4028 for the A–B pair there, the library 0.3935.
 
 ## Tolerance
 
-Comparisons allow 5 standard errors, `sqrt(p (1 - p) / B)`, plus `1 / B` so
-that p-values of exactly 0 or 1 still get a tolerance. With about 18 such
-comparisons the chance of a spurious failure is roughly 1 in 100 000 per run.
-`Random.seed!` does not make multi-threaded runs reproducible, so a failure
-should be re-run before it is believed.
+The library is compared with 5 standard errors, `sqrt(p (1 - p) / B)`, plus
+`1 / B` so that p-values of exactly 0 or 1 still get a tolerance. With about
+12 such comparisons the chance of a spurious failure is roughly 1 in 100 000
+per run. `Random.seed!` does not make multi-threaded runs reproducible, so a
+failure should be re-run before it is believed. The exact enumeration and
+Sakai's code are deterministic and are compared to 1e-5, the six significant
+digits his code prints.
