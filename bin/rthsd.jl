@@ -9,6 +9,10 @@ function cliargs()
     s = ArgParseSettings()
 
     @add_arg_table! s begin
+        "input"
+        help = "CSV file to read; - or nothing reads stdin"
+        default = "-"
+
         "--trials", "-n", "--B"
         help = "Number of trials (--B is an alias)"
         dest_name = "trials"
@@ -18,6 +22,18 @@ function cliargs()
         "--seed"
         help = "Seed for the random number generator (default: unseeded)"
         arg_type = Int
+
+        "--block"
+        help = "Column that identifies the block (default: topic)"
+        arg_type = String
+
+        "--treatment"
+        help = "Column that identifies the treatment (default: system)"
+        arg_type = String
+
+        "--value"
+        help = "Column with the score (default: score)"
+        arg_type = String
 
         "--missing"
         help = "Topics with a missing or NaN score: error or drop"
@@ -34,10 +50,15 @@ args = cliargs()
 #
 # data aquisition
 #
-df = DataFrame(CSV.File(read(stdin)))
-(scores, systems) = RandomizedTukeyHSD.scores_matrix(df.topic,
-                                                     df.system,
-                                                     df.score)
+input = args["input"] == "-" ? stdin : args["input"]
+df = DataFrame(CSV.File(read(input)))
+
+(block, treatment, value) = RandomizedTukeyHSD.tidy_columns(
+    names(df), args["block"], args["treatment"], args["value"]
+)
+(scores, systems) = RandomizedTukeyHSD.scores_matrix(df[!, block],
+                                                     df[!, treatment],
+                                                     df[!, value])
 
 #
 # topics with a missing or NaN score
