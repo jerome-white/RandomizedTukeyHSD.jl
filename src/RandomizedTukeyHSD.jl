@@ -15,20 +15,33 @@ Randomized Tukey HSD test over all pairs of systems.
 are shuffled across systems within every topic, and the largest minus
 the smallest system mean is recorded. A pair's p-value is the fraction
 of trials whose range is at least the pair's observed absolute
-difference in means.
+difference in means. A p-value of 0 means no trial reached the
+difference, that is, p < 1/`B`.
 
 `systems` names the columns of `scores`. `rng` is the random number
-generator the trials are drawn from (the global one if left out); with
-the same `rng` state, `B`,
-`scores` and Julia version the p-values are the same at any number of
-threads. Returns one named tuple per pair of systems, in the order
-(1,2), (1,3), ..., (n-1,n), with fields `system1`, `system2`, `mean1`,
-`mean2`, `difference` (`mean1 - mean2`) and `pvalue`. A vector of named
-tuples is a Tables.jl table.
+generator the trials are drawn from (the global one if left out). With
+the same `rng` state, `B`, `scores` and Julia version the p-values are
+the same at any number of threads.
 
-Throws an `ArgumentError` if `scores` contains `NaN`: one `NaN` makes
-every p-value meaningless, including those of pairs that do not involve
-its system.
+Returns one named tuple per pair of systems, in the order (1,2), (1,3),
+..., (n-1,n), with fields `system1`, `system2`, `mean1`, `mean2`,
+`difference` (`mean1 - mean2`) and `pvalue`. A vector of named tuples is
+a Tables.jl table.
+
+Throws an `ArgumentError` if `B` is not positive, if there are fewer than
+two systems, or if `scores` contains `NaN` (one `NaN` makes every p-value
+meaningless, including those of pairs that do not involve its system),
+and a `DimensionMismatch` if `systems` does not have one name per column.
+
+# Example
+
+```julia
+using Random
+scores = [0.10 0.40 0.70; 0.20 0.50 0.60; 0.15 0.45 0.80; 0.25 0.35 0.65]
+results = randomized_tukey_hsd(Xoshiro(1), scores; B=10_000,
+                               systems=["A", "B", "C"])
+results[2].pvalue   # A against C
+```
 """
 function randomized_tukey_hsd(scores::AbstractMatrix{<:Real}; kwargs...)
     return randomized_tukey_hsd(Random.default_rng(), scores; kwargs...)
