@@ -54,6 +54,14 @@ end
         @test r[i].pvalue == 1
     end
 
+    # with one topic both arrangements of two systems have the observed
+    # range, so every one of the B trials counts, at the lowest and highest
+    # trial count alike
+    @testset "a single topic always gives p = 1" for B in (1, 2, 100)
+        r = randomized_tukey_hsd([0.1 0.3]; B=B)
+        @test r[1].pvalue == 1
+    end
+
     @testset "default system names are column numbers" begin
         r = randomized_tukey_hsd(SCORES; B=10)
         @test (r[1].system1, r[1].system2) == (1, 2)
