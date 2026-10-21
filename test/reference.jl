@@ -67,10 +67,9 @@ end
 
 # tiny.csv has scores on a 0.05 grid, so 12 of its 1296 arrangements have a
 # range that equals the observed A-B difference mathematically but not in
-# floating point. Sakai's code counts them (its README says equality counts,
-# and it prints ranges to six decimals), giving the mathematical p-value
-# 0.4028; the library converges to 0.3935. Fixing issue #17 turns the
-# @test_broken into an unexpected pass.
+# floating point. They have to count: Sakai's code does (its README says
+# equality counts, and it prints ranges to six decimals), and the exact
+# p-value is 0.4028. Without a tolerance the library gave 0.3935 (issue #17).
 @testset "floating-point ties (issue #17)" begin
     (scores, systems) = read_scores(joinpath(DATA, "tiny.csv"))
     sakai = read_reference(joinpath(DATA, "tiny_sakai.csv"))
@@ -83,5 +82,7 @@ end
     Random.seed!(1)
     results = randomized_tukey_hsd(scores; B=B, systems=systems)
 
-    @test_broken abs(results[1].pvalue - exact[1]) <= tolerance(exact[1], B)
+    for (r, p) in zip(results, exact)
+        @test abs(r.pvalue - p) <= tolerance(p, B)
+    end
 end
