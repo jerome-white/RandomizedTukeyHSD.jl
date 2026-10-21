@@ -81,7 +81,9 @@ function _randomized_tukey_hsd(scores, B, systems)
         this = threadid()
         ptr = view(data, :, :, this)
 
-        data[:,:,this] = mapslices(shuffle!, ptr; dims=1)
+        for col in eachcol(ptr)
+            shuffle!(col)
+        end
 
         m = mean(ptr; dims=2)
         d = maximum(m) - minimum(m)
