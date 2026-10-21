@@ -19,8 +19,9 @@ function read_scores(path)
     return (scores, systems)
 end
 
-# Reads the reference table written by test/reference/python_reference.py
-# into a Dict mapping (system1, system2) to (difference, pvalue).
+# Reads a reference table (system1,system2,difference,p), as written by
+# test/reference/sakai_reference.sh, into a Dict mapping
+# (system1, system2) to (difference, pvalue).
 function read_reference(path)
     reference = Dict{Tuple{String,String},Tuple{Float64,Float64}}()
     for line in readlines(path)[2:end]
