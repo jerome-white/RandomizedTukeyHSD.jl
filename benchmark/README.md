@@ -189,8 +189,9 @@ machine; the per-row noise at 4 and 10 threads is larger than at one thread.
 ## Checking that a change keeps the results
 
 `snapshot.jl` prints p-values for the fixtures and two random matrices under
-a fixed seed. On one thread the output is deterministic, so a change that
-should only affect speed can be checked for **bit-identical** results:
+a fixed seed. The output is deterministic (and, since #24, the same at any
+thread count), so a change that should only affect speed can be checked for
+**bit-identical** results:
 
 ```bash
 julia --project=benchmark -t 1 benchmark/snapshot.jl > before.txt
