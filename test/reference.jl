@@ -67,9 +67,9 @@ end
 
 # tiny.csv has scores on a 0.05 grid, so 12 of its 1296 arrangements have a
 # range that equals the observed A-B difference mathematically but not in
-# floating point. The library compares with a plain >= (documented in its
-# docstring, and deliberately not given a tolerance: issue #17), so it does
-# not count them and converges to the plain-float value 0.3935. Sakai's code
+# floating point. The library compares with a plain >= and deliberately has
+# no tolerance (issue #17), so it does not count them and converges to the
+# plain-float value 0.3935. Sakai's code
 # counts them (its README says equality counts, and it prints ranges to six
 # decimals), giving the mathematical value 0.4028. The @test_broken records
 # that difference and will report an unexpected pass if it ever goes away.
