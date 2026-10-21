@@ -6,13 +6,6 @@ using Base.Threads
 
 export randomized_tukey_hsd
 
-# A permuted range within this fraction of the largest score of an observed
-# difference is treated as equal to it. Sums of floating-point scores round
-# differently depending on which scores are added, so ranges that are equal
-# mathematically can differ in the last bits; this is many orders of
-# magnitude above that error and far below any real difference.
-const RELATIVE_TOLERANCE = 1e-9
-
 """
     randomized_tukey_hsd(scores; B, systems=axes(scores, 2))
 
@@ -22,9 +15,7 @@ Randomized Tukey HSD test over all pairs of systems.
 are shuffled across systems within every topic, and the largest minus
 the smallest system mean is recorded. A pair's p-value is the fraction
 of trials whose range is at least the pair's observed absolute
-difference in means. A range that equals the observed difference counts,
-up to a relative tolerance of `1e-9` of the largest score that absorbs
-floating-point rounding.
+difference in means.
 
 `systems` names the columns of `scores`. Returns one named tuple per
 pair of systems, in the order (1,2), (1,3), ..., (n-1,n), with fields
@@ -64,14 +55,12 @@ function _randomized_tukey_hsd(scores, B, systems)
     (ntopics, nsystems) = size(scores)
 
     #
-    # system means and the range each pair's difference has to reach
+    # system means and observed differences
     #
     sysmeans = vec(mean(scores; dims=1))
     comparisons = _pairs(nsystems)
-    tolerance = RELATIVE_TOLERANCE * maximum(abs, scores)
-    thresholds = Dict(
-        (j, k) => abs(sysmeans[j] - sysmeans[k]) - tolerance
-        for (j, k) in comparisons
+    observed = Dict(
+        (j, k) => abs(sysmeans[j] - sysmeans[k]) for (j, k) in comparisons
     )
 
     #
@@ -97,7 +86,7 @@ function _randomized_tukey_hsd(scores, B, systems)
         m = mean(ptr; dims=2)
         d = maximum(m) - minimum(m)
         for (j, k) in comparisons
-            if d >= thresholds[(j, k)]
+            if d >= observed[(j, k)]
                 counts[j,k,this] += 1
             end
         end
