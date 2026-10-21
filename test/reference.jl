@@ -67,21 +67,32 @@ end
 
 # tiny.csv has scores on a 0.05 grid, so 12 of its 1296 arrangements have a
 # range that equals the observed A-B difference mathematically but not in
-# floating point. Sakai's code counts them (its README says equality counts,
-# and it prints ranges to six decimals), giving the mathematical p-value
-# 0.4028; the library converges to 0.3935. Fixing issue #17 turns the
-# @test_broken into an unexpected pass.
+# floating point. The library compares with a plain >= (documented in its
+# docstring, and deliberately not given a tolerance: issue #17), so it does
+# not count them and converges to the plain-float value 0.3935. Sakai's code
+# counts them (its README says equality counts, and it prints ranges to six
+# decimals), giving the mathematical value 0.4028. The @test_broken records
+# that difference and will report an unexpected pass if it ever goes away.
 @testset "floating-point ties (issue #17)" begin
     (scores, systems) = read_scores(joinpath(DATA, "tiny.csv"))
     sakai = read_reference(joinpath(DATA, "tiny_sakai.csv"))
     exact = exact_pvalues(scores)
+    plain = exact_pvalues(scores; tol=0.0)
 
     @test sakai[("A", "B")][2] ≈ exact[1] atol=PRINTED
     @test exact[1] ≈ 0.40277777777777777
+    @test plain[1] ≈ 0.39351851851851855
+    @test plain[2:end] ≈ exact[2:end]
 
     B = 4 * TRIALS
     Random.seed!(1)
     results = randomized_tukey_hsd(scores; B=B, systems=systems)
 
+    # what the library says it computes
+    for (r, p) in zip(results, plain)
+        @test abs(r.pvalue - p) <= tolerance(p, B)
+    end
+
+    # what the method means
     @test_broken abs(results[1].pvalue - exact[1]) <= tolerance(exact[1], B)
 end
