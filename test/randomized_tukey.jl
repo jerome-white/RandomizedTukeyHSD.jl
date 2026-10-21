@@ -73,11 +73,11 @@ end
         @test X == SCORES
     end
 
-    @testset "NaN scores warn" begin
+    @testset "NaN scores are rejected" begin
         X = copy(SCORES)
         X[2, 2] = NaN
-        @test_logs (:warn, r"1 NaN") randomized_tukey_hsd(X; B=10)
-        @test_logs randomized_tukey_hsd(SCORES; B=10)
+        @test_throws ArgumentError randomized_tukey_hsd(X; B=10)
+        @test_throws r"1 NaN" randomized_tukey_hsd(X; B=10)
     end
 
     @testset "argument checks" begin

@@ -45,5 +45,12 @@ julia --project=bin -e 'using Pkg; Pkg.instantiate()'
 julia --project=bin bin/rthsd.jl --B 10000 < scores.csv
 ```
 
+A topic with a missing or `NaN` score in any system makes the test
+meaningless, so by default the CLI stops with an error. `--missing drop`
+removes those topics for every system (complete cases) and says how many
+it removed. Whether that is appropriate depends on why the scores are
+missing: it is sound for a topic that is undefined for all systems, but
+flatters a system whose failures are dropped.
+
 Add `-t N` (or `-t auto`) to use more threads. The threading design is
 still being reworked (#6).

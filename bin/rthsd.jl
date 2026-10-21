@@ -11,6 +11,12 @@ function cliargs()
         "--B"
         help = "Number of replications"
         arg_type = Int
+
+        "--missing"
+        help = "Topics with a missing or NaN score: error or drop"
+        arg_type = String
+        default = "error"
+        range_tester = x -> x in ("error", "drop")
     end
 
     return parse_args(s)
@@ -24,6 +30,29 @@ args = cliargs()
 df = DataFrame(CSV.File(read(stdin)))
 df = unstack(df, :topic, :system, :score)
 select!(df, Not(:topic))
+
+#
+# topics with a missing or NaN score
+#
+function incomplete(df)
+    flags = Bool[]
+    for row in eachrow(df)
+        flag = any(x -> ismissing(x) || isnan(x), row)
+        push!(flags, flag)
+    end
+
+    return flags
+end
+
+bad = incomplete(df)
+if any(bad)
+    msg = "$(sum(bad)) of $(nrow(df)) topics have a missing or NaN score"
+    args["missing"] == "error" && error("$msg; use --missing drop")
+
+    @warn "Dropping topics: $msg"
+    df = df[.!bad, :]
+    nrow(df) > 0 || error("no topics left")
+end
 
 @info "Exploring:" args["B"] / factorial(ncol(df)) ^ nrow(df)
 
