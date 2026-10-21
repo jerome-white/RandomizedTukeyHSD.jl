@@ -27,11 +27,12 @@ results = randomized_tukey_hsd(scores; B=10_000, systems=["A", "B", "C"])
 
 ## Layout
 
-| Path       | Contents                                        |
-|------------|-------------------------------------------------|
-| `src/`     | the library                                     |
-| `test/`    | the test suite (`] test`)                       |
-| `bin/`     | `rthsd.jl`, the CLI, with its own environment   |
+| Path         | Contents                                      |
+|--------------|-----------------------------------------------|
+| `src/`       | the library                                   |
+| `test/`      | the test suite (`] test`)                     |
+| `bin/`       | `rthsd.jl`, the CLI, with its own environment |
+| `benchmark/` | benchmark suite and the recorded baseline     |
 
 ## Running the CLI
 

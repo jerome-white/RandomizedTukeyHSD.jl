@@ -1,0 +1,6 @@
+[deps]
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+RandomizedTukeyHSD = "4a942d2e-43ad-4dde-8fef-c59cc3eb0421"
+
+[sources]
+RandomizedTukeyHSD = {path = ".."}
