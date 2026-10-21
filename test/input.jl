@@ -64,3 +64,59 @@ end
     @test size(kept) == (2, 3)
     @test length(randomized_tukey_hsd(kept; trials=10)) == 3
 end
+
+@testset "tidy_columns" begin
+    pick(names; block=nothing, treatment=nothing, value=nothing) =
+        RT.tidy_columns(names, block, treatment, value)
+
+    # the IR names, in any order, and extra columns
+    @test pick(["topic", "system", "score"]) == ("topic", "system", "score")
+    @test pick(["score", "system", "topic", "run"]) ==
+        ("topic", "system", "score")
+
+    # asked for explicitly
+    @test pick(["a", "b", "c"]; block="c", treatment="a", value="b") ==
+        ("c", "a", "b")
+    @test pick(["dataset", "model", "accuracy", "note"]; block="dataset",
+               treatment="model", value="accuracy") ==
+        ("dataset", "model", "accuracy")
+
+    # three columns with other names: in the order block, treatment, value
+    @test pick(["dataset", "model", "accuracy"]) ==
+        ("dataset", "model", "accuracy")
+
+    # a role given, the rest decided from what is left
+    @test pick(["dataset", "model", "accuracy"]; value="dataset") ==
+        ("model", "accuracy", "dataset")
+    @test pick(["topic", "model", "accuracy"]) ==
+        ("topic", "model", "accuracy")
+
+    @testset "errors" begin
+        @test_throws r"cannot tell which columns" pick(["a", "b", "c", "d"])
+        @test_throws r"no column \"x\" for the treatment" pick(
+            ["a", "b", "c"]; treatment="x"
+        )
+        @test_throws r"different columns" pick(
+            ["a", "b", "c"]; block="a", treatment="a", value="b"
+        )
+    end
+end
+
+@testset "wide_scores" begin
+    (matrix, names) = RT.wide_scores(
+        ["A", "B"], [[0.1, 0.2, 0.3], [1, missing, 3]]
+    )
+    @test names == ["A", "B"]
+    @test matrix[:, 1] == [0.1, 0.2, 0.3]
+    @test matrix[1, 2] == 1.0 && matrix[3, 2] == 3.0
+    @test isnan(matrix[2, 2])
+    @test RT.incomplete_topics(matrix) == [false, true, false]
+
+    @test_throws DimensionMismatch RT.wide_scores(["A"], [[1.0], [2.0]])
+    @test_throws DimensionMismatch RT.wide_scores(
+        ["A", "B"], [[1.0, 2.0], [1.0]]
+    )
+    @test_throws r"column \"B\" is not numeric" RT.wide_scores(
+        ["A", "B"], [[1.0, 2.0], ["x", "y"]]
+    )
+end
