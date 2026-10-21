@@ -11,6 +11,7 @@ function cliargs()
         "--B"
         help = "Number of replications"
         arg_type = Int
+        required = true
 
         "--missing"
         help = "Topics with a missing or NaN score: error or drop"
@@ -54,7 +55,21 @@ if any(bad)
     nrow(df) > 0 || error("no topics left")
 end
 
-@info "Exploring:" args["B"] / factorial(ncol(df)) ^ nrow(df)
+#
+# size of the space of arrangements, in logs: it does not fit in an Int
+# (or a Float64) for realistic numbers of systems and topics
+#
+function log10_arrangements(nsystems, ntopics)
+    perms = 0.0
+    for n in 2:nsystems
+        perms += log10(n)
+    end
+
+    return ntopics * perms
+end
+
+@info "Trials against arrangements" B=args["B"] log10_arrangements=round(
+    log10_arrangements(ncol(df), nrow(df)); digits=2)
 
 #
 # begin!
