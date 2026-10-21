@@ -6,12 +6,12 @@ Carterette ([2012](https://doi.org/10.1145/2094072.2094076)) and
 advocated by Sakai
 ([2018](https://doi.org/10.1007/978-981-13-1199-4_4)).
 
-The test needs no normality assumption. In each of B trials the scores
+The test needs no normality assumption. In each of `trials` trials the scores
 are shuffled across systems within every topic, and the largest minus
 the smallest system mean is recorded. A pair's p-value is the fraction
 of trials whose range is at least the pair's observed difference. It is
 not corrected by adding one to the count, so a p-value of 0 means
-p < 1/B.
+p < 1/`trials`.
 
 **Status:** pre-release (`0.1.0-DEV`), not in the General registry.
 
@@ -31,13 +31,14 @@ The library needs Julia 1.9 or newer and depends only on `Random` and
 using Random, RandomizedTukeyHSD
 
 # scores: a topics × systems matrix
-results = randomized_tukey_hsd(Xoshiro(1), scores; B=10_000,
+results = randomized_tukey_hsd(Xoshiro(1), scores; trials=10_000,
                                systems=["A", "B", "C"])
 ```
 
 - `scores`: topics in rows, systems in columns. It must have at least two
   columns and no `NaN` (see [Missing scores](#missing-scores)).
-- `B`: the number of trials, required.
+- `trials`: the number of trials, required (called `B` in the literature
+  and in earlier versions of this package).
 - `systems`: one name per column; defaults to the column numbers.
 - `rng`: optional first argument, a random number generator
   (see [Threads and reproducibility](#threads-and-reproducibility)).
@@ -58,7 +59,7 @@ the errors it throws.
 
 ```bash
 julia --project=bin -e 'using Pkg; Pkg.instantiate()'
-julia --project=bin bin/rthsd.jl --B 10000 < scores.csv > results.csv
+julia --project=bin bin/rthsd.jl --trials 10000 < scores.csv > results.csv
 ```
 
 **Input** is tidy CSV on stdin with `topic`, `system` and `score`
@@ -78,7 +79,7 @@ settings used are logged to stderr.
 
 | Option        | Meaning                                         |
 |---------------|-------------------------------------------------|
-| `--B N`       | number of trials; required                      |
+| `--trials N`  | number of trials; required (`-n`, or `--B`)     |
 | `--seed N`    | seed for the generator; otherwise runs differ   |
 | `--missing M` | `error` (default) or `drop`; see below          |
 
@@ -105,7 +106,7 @@ different topics, which defeats the point of the test.
 Add `-t N` (or `-t auto`) to use more threads:
 
 ```bash
-julia -t auto --project=bin bin/rthsd.jl --B 100000 < scores.csv
+julia -t auto --project=bin bin/rthsd.jl --trials 100000 < scores.csv
 ```
 
 The trials are cut into chunks of 64, whichever number of threads is used.
@@ -116,22 +117,22 @@ the same at any thread count:
 
 ```julia
 using Random
-randomized_tukey_hsd(Xoshiro(1), scores; B=100_000)
+randomized_tukey_hsd(Xoshiro(1), scores; trials=100_000)
 ```
 
 Seeding the global generator (`Random.seed!(1)`) and leaving it out does
-the same. The CLI takes `--seed`, and prints the settings it used (`B`,
+the same. The CLI takes `--seed`, and prints the settings it used (`trials`,
 the seed) to stderr:
 
 ```bash
-julia --project=bin bin/rthsd.jl --B 100000 --seed 1 < scores.csv
+julia --project=bin bin/rthsd.jl --trials 100000 --seed 1 < scores.csv
 ```
 
 Without `--seed` the generator is not seeded and each run differs.
 
 What this does and does not promise:
 
-- The same seed, `B`, scores and Julia version give the same p-values on
+- The same seed, `trials`, scores and Julia version give the same p-values on
   any machine and thread count. Across Julia versions the random streams
   (`Xoshiro`, `shuffle!`) are not guaranteed to stay the same.
 - The chunk size (64, an internal default that is not a public parameter)
@@ -139,9 +140,9 @@ What this does and does not promise:
   trial draws, changes the output for a fixed seed, so it may change
   between package versions. Record the package version with the seed.
 - It is a safeguard for an exact re-run, not for the conclusions. A
-  p-value has a Monte Carlo error of about `sqrt(p(1 - p) / B)` (0.0007
-  for p = 0.05 and `B` = 100 000), so choose `B` large enough that the
-  decisions do not depend on the seed, and record the seed, `B` and
+  p-value has a Monte Carlo error of about `sqrt(p(1 - p) / trials)` (0.0007
+  for p = 0.05 and `trials` = 100 000), so choose `trials` large enough that the
+  decisions do not depend on the seed, and record the seed, `trials` and
   versions with the results.
 
 ## Known limitation: floating-point ties

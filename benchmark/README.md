@@ -29,6 +29,9 @@ run gave per-trial times within 2.5% of the first run for every row.
 
 `us/trial` is the median time divided by B.
 
+`B` in the tables below is the `trials` argument, which was called `B` when they
+were recorded (renamed in #39); new runs print `trials` as the column header.
+
 ### 1 thread (`-t 1`)
 
 | systems | topics | B | median (ms) | us/trial | min (ms) | MiB | allocs |
