@@ -40,6 +40,7 @@ end
 # All pairs (j, k) with j < k, in the order (1,2), (1,3), ..., (n-1,n).
 function _pairs(n)
     pairs = Tuple{Int,Int}[]
+    sizehint!(pairs, binomial(n, 2))
 
     for j in 1:n-1
         for k in j+1:n
