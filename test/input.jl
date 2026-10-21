@@ -43,7 +43,8 @@ const RT = RandomizedTukeyHSD
 
     @testset "a matrix built from tidy rows is what the test takes" begin
         (scores, systems) = read_scores(joinpath(DATA, "tiny.csv"))
-        r = randomized_tukey_hsd(Xoshiro(1), scores; B=100, systems=systems)
+        r = randomized_tukey_hsd(Xoshiro(1), scores; trials=100,
+                                 systems=systems)
         @test [ x.system1 for x in r ] == ["A", "A", "B"]
     end
 end
@@ -61,5 +62,5 @@ end
     # dropping them leaves a matrix the test accepts
     kept = scores[.!RT.incomplete_topics(scores), :]
     @test size(kept) == (2, 3)
-    @test length(randomized_tukey_hsd(kept; B=10)) == 3
+    @test length(randomized_tukey_hsd(kept; trials=10)) == 3
 end
