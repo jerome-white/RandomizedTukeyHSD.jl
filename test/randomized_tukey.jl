@@ -63,7 +63,7 @@ end
     end
 
     @testset "rng" begin
-        run(rng) = randomized_tukey_hsd(SCORES; B=500, rng=rng)
+        run(rng) = randomized_tukey_hsd(rng, SCORES; B=500)
 
         # the same state gives the same p-values; another seed does not
         @test run(Xoshiro(1)) == run(Xoshiro(1))
@@ -74,7 +74,7 @@ end
         Random.seed!(3)
         expected = randomized_tukey_hsd(SCORES; B=500)
         Random.seed!(3)
-        @test randomized_tukey_hsd(SCORES; B=500, rng=Random.default_rng()) ==
+        @test randomized_tukey_hsd(Random.default_rng(), SCORES; B=500) ==
             expected
 
         # an explicit rng leaves the global one alone; before Julia 1.10
@@ -85,6 +85,26 @@ end
             Random.seed!(3)
             run(Xoshiro(1))
             @test rand() == before
+        end
+    end
+
+    @testset "chunk size" begin
+        run(chunk; B=100) = RandomizedTukeyHSD._randomized_tukey_hsd(
+            Xoshiro(1), SCORES, B, NAMES, chunk
+        )
+
+        # the default is 64
+        @test run(64) == randomized_tukey_hsd(Xoshiro(1), SCORES; B=100,
+                                              systems=NAMES)
+
+        # it is part of the stream: the same size repeats, another differs
+        @test run(10) == run(10)
+        @test run(10; B=5000) != run(64; B=5000)
+
+        # whatever the size, p-values are counts out of B
+        for chunk in (1, 7, 100, 101)
+            p = [ r.pvalue for r in run(chunk) ]
+            @test all(x -> 0 <= x <= 1 && isinteger(x * 100), p)
         end
     end
 
