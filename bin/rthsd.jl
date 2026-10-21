@@ -2,8 +2,7 @@ using
     CSV,
     ArgParse,
     DataFrames,
-    RandomizedTukeyHSD,
-    SpecialFunctions
+    RandomizedTukeyHSD
 
 function cliargs()
     s = ArgParseSettings()
@@ -60,7 +59,7 @@ end
 # size of the space of arrangements, in logs: it does not fit in an Int
 # (or a Float64) for realistic numbers of systems and topics
 #
-log10_arrangements = nrow(df) * logfactorial(ncol(df)) / log(10)
+log10_arrangements = nrow(df) * sum(log10, 2:ncol(df); init=0.0)
 @info "Trials against arrangements" B=args["B"] log10_arrangements=round(
     log10_arrangements; digits=2)
 
