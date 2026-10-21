@@ -7,4 +7,5 @@ include("helpers.jl")
     include("randomized_tukey.jl")
     include("reference.jl")
     include("threads.jl")
+    include("tables.jl")
 end
