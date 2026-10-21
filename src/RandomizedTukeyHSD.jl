@@ -96,12 +96,15 @@ function _randomized_tukey_hsd(scores, B, systems)
     # report
     #
     results = map(comparisons) do (j, k)
+        difference = sysmeans[j] - sysmeans[k]
+        pvalue = sum(counts[j,k,:]) / B
+
         (system1=systems[j],
          system2=systems[k],
          mean1=sysmeans[j],
          mean2=sysmeans[k],
-         difference=sysmeans[j] - sysmeans[k],
-         pvalue=sum(counts[j,k,:]) / B)
+         difference=difference,
+         pvalue=pvalue)
     end
 
     return results
