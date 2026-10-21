@@ -23,8 +23,16 @@ function cliargs()
         help = "Seed for the random number generator (default: unseeded)"
         arg_type = Int
 
+        "--format"
+        help = "tidy: one row per block and treatment; wide: one " *
+               "row per block, one column per treatment"
+        arg_type = String
+        default = "tidy"
+        range_tester = x -> x in ("tidy", "wide")
+
         "--block"
-        help = "Column that identifies the block (default: topic)"
+        help = "Column that identifies the block (default: topic); with " *
+               "--format wide, a column to leave out"
         arg_type = String
 
         "--treatment"
@@ -53,12 +61,25 @@ args = cliargs()
 input = args["input"] == "-" ? stdin : args["input"]
 df = DataFrame(CSV.File(read(input)))
 
-(block, treatment, value) = RandomizedTukeyHSD.tidy_columns(
-    names(df), args["block"], args["treatment"], args["value"]
-)
-(scores, systems) = RandomizedTukeyHSD.scores_matrix(df[!, block],
-                                                     df[!, treatment],
-                                                     df[!, value])
+if args["format"] == "tidy"
+    (block, treatment, value) = RandomizedTukeyHSD.tidy_columns(
+        names(df), args["block"], args["treatment"], args["value"]
+    )
+    (scores, systems) = RandomizedTukeyHSD.scores_matrix(df[!, block],
+                                                         df[!, treatment],
+                                                         df[!, value])
+else
+    for option in ("treatment", "value")
+        if args[option] !== nothing
+            error("--$option applies to --format tidy only")
+        end
+    end
+
+    treatments = [ n for n in names(df) if n != args["block"] ]
+    (scores, systems) = RandomizedTukeyHSD.wide_scores(
+        treatments, [ df[!, n] for n in treatments ]
+    )
+end
 
 #
 # topics with a missing or NaN score
