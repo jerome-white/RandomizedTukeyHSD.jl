@@ -113,6 +113,96 @@ These are readings of the tables above, not profiles.
 - **Allocation volume does not change with threads**, so the multi-threaded
   runs spend the same memory traffic in less wall-clock time.
 
+## After #5: no per-trial allocation
+
+The shuffle is done in place and the system means go into a preallocated
+buffer, so a trial no longer allocates. Each table compares the library
+before the change with after it, measured back to back on the same machine
+so that both saw the same load (about 1.7 to 2.4, lighter than during the
+baseline above, which is why "before" differs a little from the baseline
+tables).
+
+Allocation per call falls from about 250 000 allocations and 30 to 170 MiB
+at B = 10 000 to a few hundred allocations and under half a MiB, which do not
+grow with B (for example 5 systems × 50 topics: 250049 allocations, 29.8 MiB
+before and 51, 0.0 MiB after at B = 10 000; 20 × 100: 260415 allocations,
+169.4 MiB before and 417, 0.1 MiB after).
+
+### 1 thread (`-t 1`)
+
+| systems | topics | B | before (us/trial) | after (us/trial) | speedup |
+|--:|--:|--:|--:|--:|--:|
+| 5 | 50 | 1000 | 1.31 | 0.62 | 2.11x |
+| 5 | 50 | 10000 | 1.36 | 0.61 | 2.23x |
+| 5 | 100 | 1000 | 2.42 | 1.18 | 2.05x |
+| 5 | 100 | 10000 | 2.32 | 1.17 | 1.98x |
+| 10 | 50 | 1000 | 2.51 | 1.38 | 1.82x |
+| 10 | 50 | 10000 | 2.48 | 1.36 | 1.82x |
+| 10 | 100 | 1000 | 4.48 | 2.62 | 1.71x |
+| 10 | 100 | 10000 | 4.22 | 2.61 | 1.62x |
+| 20 | 50 | 1000 | 4.66 | 2.92 | 1.60x |
+| 20 | 50 | 10000 | 4.34 | 2.90 | 1.50x |
+| 20 | 100 | 1000 | 8.34 | 5.39 | 1.55x |
+| 20 | 100 | 10000 | 7.77 | 5.38 | 1.44x |
+
+### 4 threads (`-t 4`)
+
+| systems | topics | B | before (us/trial) | after (us/trial) | speedup |
+|--:|--:|--:|--:|--:|--:|
+| 5 | 50 | 1000 | 0.44 | 0.24 | 1.83x |
+| 5 | 50 | 10000 | 0.43 | 0.21 | 2.05x |
+| 5 | 100 | 1000 | 0.76 | 0.42 | 1.81x |
+| 5 | 100 | 10000 | 0.77 | 0.40 | 1.93x |
+| 10 | 50 | 1000 | 0.66 | 0.39 | 1.69x |
+| 10 | 50 | 10000 | 0.67 | 0.36 | 1.86x |
+| 10 | 100 | 1000 | 1.18 | 0.71 | 1.66x |
+| 10 | 100 | 10000 | 1.15 | 0.69 | 1.67x |
+| 20 | 50 | 1000 | 1.21 | 0.80 | 1.51x |
+| 20 | 50 | 10000 | 1.19 | 0.76 | 1.57x |
+| 20 | 100 | 1000 | 2.26 | 1.43 | 1.58x |
+| 20 | 100 | 10000 | 2.12 | 1.41 | 1.50x |
+
+### 10 threads (`-t 10`)
+
+Median of three interleaved runs, because single 10-thread runs of the same
+code differed by up to 70% on one row.
+
+| systems | topics | B | before (us/trial) | after (us/trial) | speedup |
+|--:|--:|--:|--:|--:|--:|
+| 5 | 50 | 1000 | 0.43 | 0.21 | 2.05x |
+| 5 | 50 | 10000 | 0.36 | 0.15 | 2.40x |
+| 5 | 100 | 1000 | 0.64 | 0.38 | 1.68x |
+| 5 | 100 | 10000 | 0.56 | 0.27 | 2.07x |
+| 10 | 50 | 1000 | 0.54 | 0.33 | 1.64x |
+| 10 | 50 | 10000 | 0.50 | 0.23 | 2.17x |
+| 10 | 100 | 1000 | 0.85 | 0.54 | 1.57x |
+| 10 | 100 | 10000 | 0.81 | 0.42 | 1.93x |
+| 20 | 50 | 1000 | 0.87 | 0.61 | 1.43x |
+| 20 | 50 | 10000 | 0.86 | 0.49 | 1.76x |
+| 20 | 100 | 1000 | 1.47 | 0.97 | 1.52x |
+| 20 | 100 | 10000 | 1.42 | 0.85 | 1.67x |
+
+The speedup is smaller for large problems, presumably because the shuffle and
+the sums are now most of the time (not profiled). These numbers come from one
+machine; the per-row noise at 4 and 10 threads is larger than at one thread.
+
+## Checking that a change keeps the results
+
+`snapshot.jl` prints p-values for the fixtures and two random matrices under
+a fixed seed. On one thread the output is deterministic, so a change that
+should only affect speed can be checked for **bit-identical** results:
+
+```bash
+julia --project=benchmark -t 1 benchmark/snapshot.jl > before.txt
+# ... make the change ...
+julia --project=benchmark -t 1 benchmark/snapshot.jl > after.txt
+diff before.txt after.txt && echo identical
+```
+
+This is stricter than the tests, which allow for Monte Carlo error. It only
+works while the sequence of random draws is unchanged; a change to how the
+shuffling or the number of draws works will legitimately alter the output.
+
 ## Caveats
 
 - One machine, one Julia version, uniform random scores.
