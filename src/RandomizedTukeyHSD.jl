@@ -110,4 +110,4 @@ function _randomized_tukey_hsd(scores, B, systems)
     return results
 end
 
-end
+end # module
