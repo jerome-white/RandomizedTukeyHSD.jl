@@ -63,16 +63,3 @@ end
     @test size(kept) == (2, 3)
     @test length(randomized_tukey_hsd(kept; B=10)) == 3
 end
-
-@testset "log10_arrangements" begin
-    # 3 systems, 4 topics: 6^4 = 1296 arrangements
-    @test RT.log10_arrangements(3, 4) ≈ log10(1296)
-    @test RT.log10_arrangements(2, 1) ≈ log10(2)
-    @test RT.log10_arrangements(1, 5) == 0.0
-
-    # where factorial(nsystems)^ntopics overflowed an Int (10 systems, 50
-    # topics) and where factorial(nsystems) itself did (100 systems)
-    @test RT.log10_arrangements(10, 50) ≈ 50 * log10(3628800)
-    @test isfinite(RT.log10_arrangements(100, 250))
-    @test RT.log10_arrangements(100, 250) ≈ 39492.5 atol=0.1
-end

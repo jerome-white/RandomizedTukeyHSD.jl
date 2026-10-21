@@ -72,17 +72,3 @@ function incomplete_topics(scores::AbstractMatrix{<:Real})
 
     return flags
 end
-
-"""
-    log10_arrangements(nsystems, ntopics)
-
-Base-10 logarithm of the number of ways to shuffle the scores across
-systems within every topic, `factorial(nsystems)^ntopics`. In logs because
-the number itself overflows an `Int`, and even a `Float64`, for realistic
-sizes.
-"""
-function log10_arrangements(nsystems, ntopics)
-    perms = sum(log10, 2:nsystems; init=0.0)
-
-    return ntopics * perms
-end

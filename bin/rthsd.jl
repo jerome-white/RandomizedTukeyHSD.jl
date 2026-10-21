@@ -58,10 +58,7 @@ end
 seed = args["seed"]
 rng = seed === nothing ? Random.default_rng() : Xoshiro(seed)
 
-arrangements = RandomizedTukeyHSD.log10_arrangements(size(scores, 2),
-                                                     size(scores, 1))
-log10_arrangements = round(arrangements; digits=2)
-@info "Settings" B=args["B"] seed log10_arrangements
+@info "Settings" B=args["B"] seed
 
 results = randomized_tukey_hsd(rng, scores; B=args["B"], systems=systems)
 
