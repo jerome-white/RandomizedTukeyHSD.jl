@@ -1,6 +1,6 @@
 # Prints p-values for the test fixtures and two random matrices under a fixed
-# seed. Run it with one thread (-t 1), where the output is deterministic, and
-# diff it before and after a change that should only affect speed.
+# seed. The output is deterministic and does not depend on the number of
+# threads; diff it before and after a change that should only affect speed.
 
 using Random
 using RandomizedTukeyHSD
