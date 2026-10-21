@@ -76,16 +76,19 @@ function _randomized_tukey_hsd(scores, B, systems)
     #
     data = Array{Float64}(undef, nsystems, ntopics, workers)
     data .= transpose(scores)
+    sums = Array{Float64}(undef, nsystems, 1, workers)
 
     @threads for i in 1:B
         this = threadid()
         ptr = view(data, :, :, this)
+        m = view(sums, :, :, this)
 
         for col in eachcol(ptr)
             shuffle!(col)
         end
 
-        m = mean(ptr; dims=2)
+        sum!(m, ptr)
+        m ./= ntopics
         d = maximum(m) - minimum(m)
         for (j, k) in comparisons
             if d >= observed[(j, k)]
