@@ -6,9 +6,9 @@ function pvalues_with(threads)
     using Random, RandomizedTukeyHSD
     scores = rand(Xoshiro(7), 30, 6)
     Random.seed!(11)
-    results = randomized_tukey_hsd(scores; B=1000)
+    results = randomized_tukey_hsd(scores; trials=1000)
     println(join([ r.pvalue for r in results ], ","))
-    results = randomized_tukey_hsd(Xoshiro(11), scores; B=1000)
+    results = randomized_tukey_hsd(Xoshiro(11), scores; trials=1000)
     println(join([ r.pvalue for r in results ], ","))
     """
     julia = Base.julia_cmd()
@@ -23,13 +23,13 @@ end
 
     @testset "repeats in one process" begin
         Random.seed!(5)
-        first = randomized_tukey_hsd(scores; B=1000)
+        first = randomized_tukey_hsd(scores; trials=1000)
         Random.seed!(5)
-        second = randomized_tukey_hsd(scores; B=1000)
+        second = randomized_tukey_hsd(scores; trials=1000)
         @test first == second
     end
 
-    # B = 1000 is not a multiple of the chunk size
+    # 1000 trials is not a multiple of the chunk size
     @testset "same p-values at any thread count" begin
         expected = pvalues_with(1)
         @test !isempty(expected)

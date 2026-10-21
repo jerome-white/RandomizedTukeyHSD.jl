@@ -9,8 +9,9 @@ function cliargs()
     s = ArgParseSettings()
 
     @add_arg_table! s begin
-        "--B"
-        help = "Number of replications"
+        "--trials", "-n", "--B"
+        help = "Number of trials (--B is an alias)"
+        dest_name = "trials"
         arg_type = Int
         required = true
 
@@ -58,9 +59,11 @@ end
 seed = args["seed"]
 rng = seed === nothing ? Random.default_rng() : Xoshiro(seed)
 
-@info "Settings" B=args["B"] seed
+@info "Settings" trials=args["trials"] seed
 
-results = randomized_tukey_hsd(rng, scores; B=args["B"], systems=systems)
+results = randomized_tukey_hsd(rng, scores;
+                               trials=args["trials"],
+                               systems=systems)
 
 #
 # report

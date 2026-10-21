@@ -18,9 +18,9 @@ const TRIALS = 200_000
 const Z = 5  # tolerance, in standard errors
 const PRINTED = 1e-5  # Sakai's code prints six significant digits
 
-# Standard error of a p-value estimated from `B` trials, plus 1 / B so that
-# p-values of exactly 0 or 1 still get a tolerance.
-tolerance(p, B) = Z * sqrt(p * (1 - p) / B) + 1 / B
+# Standard error of a p-value estimated from `trials` trials, plus
+# 1 / trials so that p-values of exactly 0 or 1 still get a tolerance.
+tolerance(p, trials) = Z * sqrt(p * (1 - p) / trials) + 1 / trials
 
 @testset "exact enumeration" begin
     @test sort(permutations_of(3)) == [
@@ -48,7 +48,7 @@ end
     exact = exact_pvalues(scores)
 
     Random.seed!(1)
-    results = randomized_tukey_hsd(scores; B=TRIALS, systems=systems)
+    results = randomized_tukey_hsd(scores; trials=TRIALS, systems=systems)
 
     @test length(results) == length(exact) == length(sakai)
 
@@ -67,18 +67,19 @@ end
 
 # The chunk size changes the random stream but not the distribution, so every
 # size must agree with the exact p-values: one trial per task, a size that
-# does not divide B, the default, and one larger than B (a single task).
+# does not divide the number of trials, the default, and one larger than it
+# (a single task).
 @testset "chunk size $chunk" for chunk in (1, 7, 64, 50_001)
     (scores, systems) = read_scores(joinpath(DATA, "distinct.csv"))
     exact = exact_pvalues(scores)
-    B = 50_000
+    trials = 50_000
 
     results = RandomizedTukeyHSD._randomized_tukey_hsd(
-        Xoshiro(chunk), scores, B, systems, chunk
+        Xoshiro(chunk), scores, trials, systems, chunk
     )
 
     for (r, p) in zip(results, exact)
-        @test abs(r.pvalue - p) <= tolerance(p, B)
+        @test abs(r.pvalue - p) <= tolerance(p, trials)
     end
 end
 
@@ -101,15 +102,16 @@ end
     @test plain[1] ≈ 0.39351851851851855
     @test plain[2:end] ≈ exact[2:end]
 
-    B = 4 * TRIALS
+    trials = 4 * TRIALS
     Random.seed!(1)
-    results = randomized_tukey_hsd(scores; B=B, systems=systems)
+    results = randomized_tukey_hsd(scores; trials=trials, systems=systems)
 
     # what the library says it computes
     for (r, p) in zip(results, plain)
-        @test abs(r.pvalue - p) <= tolerance(p, B)
+        @test abs(r.pvalue - p) <= tolerance(p, trials)
     end
 
     # what the method means
-    @test_broken abs(results[1].pvalue - exact[1]) <= tolerance(exact[1], B)
+    @test_broken abs(results[1].pvalue - exact[1]) <=
+        tolerance(exact[1], trials)
 end

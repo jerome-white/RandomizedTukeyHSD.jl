@@ -9,20 +9,20 @@ export randomized_tukey_hsd
 include("input.jl")
 
 """
-    randomized_tukey_hsd([rng,] scores; B, systems=axes(scores, 2))
+    randomized_tukey_hsd([rng,] scores; trials, systems=axes(scores, 2))
 
 Randomized Tukey HSD test over all pairs of systems.
 
-`scores` is a topics × systems matrix. In each of `B` trials the scores
+`scores` is a topics × systems matrix. In each of `trials` trials the scores
 are shuffled across systems within every topic, and the largest minus
 the smallest system mean is recorded. A pair's p-value is the fraction
 of trials whose range is at least the pair's observed absolute
 difference in means. A p-value of 0 means no trial reached the
-difference, that is, p < 1/`B`.
+difference, that is, p < 1/`trials`.
 
 `systems` names the columns of `scores`. `rng` is the random number
 generator the trials are drawn from (the global one if left out). With
-the same `rng` state, `B`, `scores` and Julia version the p-values are
+the same `rng` state, `trials`, `scores` and Julia version the p-values are
 the same at any number of threads.
 
 Returns one named tuple per pair of systems, in the order (1,2), (1,3),
@@ -30,7 +30,7 @@ Returns one named tuple per pair of systems, in the order (1,2), (1,3),
 `difference` (`mean1 - mean2`) and `pvalue`. A vector of named tuples is
 a Tables.jl table.
 
-Throws an `ArgumentError` if `B` is not positive, if there are fewer than
+Throws an `ArgumentError` if `trials` is not positive, if there are fewer than
 two systems, or if `scores` contains `NaN` (one `NaN` makes every p-value
 meaningless, including those of pairs that do not involve its system),
 and a `DimensionMismatch` if `systems` does not have one name per column.
@@ -40,7 +40,7 @@ and a `DimensionMismatch` if `systems` does not have one name per column.
 ```julia
 using Random
 scores = [0.10 0.40 0.70; 0.20 0.50 0.60; 0.15 0.45 0.80; 0.25 0.35 0.65]
-results = randomized_tukey_hsd(Xoshiro(1), scores; B=10_000,
+results = randomized_tukey_hsd(Xoshiro(1), scores; trials=10_000,
                                systems=["A", "B", "C"])
 results[2].pvalue   # A against C
 ```
@@ -51,11 +51,11 @@ end
 
 function randomized_tukey_hsd(rng::AbstractRNG,
                               scores::AbstractMatrix{<:Real};
-                              B::Integer,
+                              trials::Integer,
                               systems::AbstractVector=axes(scores, 2))
     nsystems = size(scores, 2)
 
-    B > 0 || throw(ArgumentError("B must be positive, got $B"))
+    trials > 0 || throw(ArgumentError("trials must be positive, got $trials"))
     nsystems > 1 || throw(ArgumentError("need at least two systems"))
     if length(systems) != nsystems
         msg = "$(length(systems)) system names for $nsystems systems"
@@ -65,7 +65,7 @@ function randomized_tukey_hsd(rng::AbstractRNG,
     nans = count(isnan, scores)
     nans == 0 || throw(ArgumentError("scores contain $nans NaN values"))
 
-    return _randomized_tukey_hsd(rng, scores, B, systems)
+    return _randomized_tukey_hsd(rng, scores, trials, systems)
 end
 
 # All pairs (j, k) with j < k, in the order (1,2), (1,3), ..., (n-1,n).
@@ -106,7 +106,7 @@ end
 
 # `chunk` is the number of trials per task. The random stream depends on
 # it, so changing it changes the results for a fixed `rng` state.
-function _randomized_tukey_hsd(rng, scores, B, systems, chunk=64)
+function _randomized_tukey_hsd(rng, scores, trials, systems, chunk=64)
     nsystems = size(scores, 2)
 
     #
@@ -117,16 +117,16 @@ function _randomized_tukey_hsd(rng, scores, B, systems, chunk=64)
 
     #
     # largest minus smallest system mean of every trial; trials are cut
-    # into chunks that depend only on B, each with its own seed drawn
+    # into chunks that depend only on `trials`, each with its own seed drawn
     # from `rng`, so the ranges do not depend on the number of threads
     #
-    nchunks = cld(B, chunk)
+    nchunks = cld(trials, chunk)
     seeds = rand(rng, UInt64, nchunks)
-    ranges = Vector{Float64}(undef, B)
+    ranges = Vector{Float64}(undef, trials)
 
     @sync for c in 1:nchunks
         start = (c - 1) * chunk + 1
-        stop = min(c * chunk, B)
+        stop = min(c * chunk, trials)
         @spawn _trials!(view(ranges, start:stop), scores, seeds[c])
     end
     sort!(ranges)
@@ -136,8 +136,8 @@ function _randomized_tukey_hsd(rng, scores, B, systems, chunk=64)
     #
     results = map(comparisons) do (j, k)
         difference = sysmeans[j] - sysmeans[k]
-        trials = B - searchsortedfirst(ranges, abs(difference)) + 1
-        pvalue = trials / B
+        exceeding = trials - searchsortedfirst(ranges, abs(difference)) + 1
+        pvalue = exceeding / trials
 
         (system1=systems[j],
          system2=systems[k],
