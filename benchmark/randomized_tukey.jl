@@ -11,7 +11,7 @@ using Printf
 using Random
 using RandomizedTukeyHSD
 
-const SYSTEMS = (5, 10, 20)
+const SYSTEMS = (5, 10, 20, 50, 100)
 const TOPICS = (50, 100)
 const TRIALS = (1_000, 10_000)
 

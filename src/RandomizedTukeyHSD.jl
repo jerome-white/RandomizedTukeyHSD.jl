@@ -55,28 +55,25 @@ function _randomized_tukey_hsd(scores, B, systems)
     (ntopics, nsystems) = size(scores)
 
     #
-    # system means and observed differences
+    # system means
     #
     sysmeans = vec(mean(scores; dims=1))
     comparisons = _pairs(nsystems)
-    observed = Dict(
-        (j, k) => abs(sysmeans[j] - sysmeans[k]) for (j, k) in comparisons
-    )
-
-    #
-    # initialize counts
-    #
-    # threadid() can exceed nthreads() (the interactive thread comes
-    # first), so size the per-thread state by the largest possible id
-    workers = Threads.maxthreadid()
-    counts = zeros(Int, nsystems, nsystems, workers)
 
     #
     # create views of the data
     #
+    # threadid() can exceed nthreads() (the interactive thread comes
+    # first), so size the per-thread state by the largest possible id
+    workers = Threads.maxthreadid()
     data = Array{Float64}(undef, nsystems, ntopics, workers)
     data .= transpose(scores)
     sums = Array{Float64}(undef, nsystems, 1, workers)
+
+    #
+    # largest minus smallest system mean of every trial
+    #
+    ranges = Vector{Float64}(undef, B)
 
     @threads for i in 1:B
         this = threadid()
@@ -89,20 +86,17 @@ function _randomized_tukey_hsd(scores, B, systems)
 
         sum!(m, ptr)
         m ./= ntopics
-        d = maximum(m) - minimum(m)
-        for (j, k) in comparisons
-            if d >= observed[(j, k)]
-                counts[j,k,this] += 1
-            end
-        end
+        ranges[i] = maximum(m) - minimum(m)
     end
+    sort!(ranges)
 
     #
     # report
     #
     results = map(comparisons) do (j, k)
         difference = sysmeans[j] - sysmeans[k]
-        pvalue = sum(counts[j,k,:]) / B
+        trials = B - searchsortedfirst(ranges, abs(difference)) + 1
+        pvalue = trials / B
 
         (system1=systems[j],
          system2=systems[k],

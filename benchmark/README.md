@@ -16,8 +16,8 @@ julia --project=benchmark -t 4 benchmark/randomized_tukey.jl
 Like `bin/`, the environment needs Julia 1.11 or newer (`[sources]`). The
 script prints a Markdown table of the median and minimum time over 10
 samples, microseconds per trial, memory and allocation count for each
-combination of 5/10/20 systems, 50/100 topics and B = 1000/10000, on seeded
-random scores. It prints the Julia version, CPU, thread configuration and
+combination of 5/10/20/50/100 systems, 50/100 topics and B = 1000/10000, on
+seeded random scores. It prints the Julia version, CPU, thread configuration and
 load average first, so a result can be tied to its environment.
 
 ## Baseline
@@ -202,6 +202,104 @@ diff before.txt after.txt && echo identical
 This is stricter than the tests, which allow for Monte Carlo error. It only
 works while the sequence of random draws is unchanged; a change to how the
 shuffling or the number of draws works will legitimately alter the output.
+
+## After #4: sorted p-value lookup
+
+Each trial stores its range, the ranges are sorted once, and each pair's
+p-value is found by binary search, instead of comparing every trial with
+every pair. The grid now includes 50 and 100 systems, where the number of
+pairs (1225 and 4950) makes the old pair loop expensive. "Before" is the code
+after #5; before and after were measured back to back (medians of two runs at
+1 and 4 threads and three at 10 threads) so both saw the same load.
+
+The gain depends on the number of pairs. At 20 systems or fewer it is at most
+16% and often within noise; at 100 systems × 50 topics it is about 2×: a trial
+falls from 24.6 to 12.6 us, so the pair loop was about half of the old trial
+there. At 4 and 10 threads the small rows are within noise of 1.0×:
+individual rows moved by up to 38% (4 threads) and 26% (10 threads) between
+runs of the same code.
+
+The cost is memory. The ranges are kept, so memory now grows with B: about 16
+bytes per trial (the vector and the sort's scratch copy), for example 15 MiB
+at B = 1 000 000 and 76 MiB at B = 5 000 000, where the old code allocated
+almost nothing. The sort itself does not show up: at 50 topics × 5 systems a
+trial costs 0.59 us at B = 5 000 000 against 0.61 us before. Allocations per
+call at 100 × 100 and B = 10 000 fall from 9938 to 37.
+
+### 1 thread (`-t 1`)
+
+| systems | topics | B | before (us/trial) | after (us/trial) | speedup |
+|--:|--:|--:|--:|--:|--:|
+| 5 | 50 | 1000 | 0.62 | 0.60 | 1.04x |
+| 5 | 50 | 10000 | 0.61 | 0.58 | 1.05x |
+| 5 | 100 | 1000 | 1.18 | 1.17 | 1.01x |
+| 5 | 100 | 10000 | 1.17 | 1.15 | 1.02x |
+| 10 | 50 | 1000 | 1.38 | 1.29 | 1.07x |
+| 10 | 50 | 10000 | 1.37 | 1.27 | 1.07x |
+| 10 | 100 | 1000 | 2.62 | 2.54 | 1.03x |
+| 10 | 100 | 10000 | 2.62 | 2.52 | 1.04x |
+| 20 | 50 | 1000 | 2.92 | 2.52 | 1.16x |
+| 20 | 50 | 10000 | 2.90 | 2.50 | 1.16x |
+| 20 | 100 | 1000 | 5.39 | 5.00 | 1.08x |
+| 20 | 100 | 10000 | 5.38 | 4.99 | 1.08x |
+| 50 | 50 | 1000 | 9.07 | 6.33 | 1.43x |
+| 50 | 50 | 10000 | 9.04 | 6.29 | 1.44x |
+| 50 | 100 | 1000 | 15.37 | 12.58 | 1.22x |
+| 50 | 100 | 10000 | 15.32 | 12.55 | 1.22x |
+| 100 | 50 | 1000 | 24.82 | 12.66 | 1.96x |
+| 100 | 50 | 10000 | 24.58 | 12.55 | 1.96x |
+| 100 | 100 | 1000 | 37.32 | 25.09 | 1.49x |
+| 100 | 100 | 10000 | 37.17 | 25.00 | 1.49x |
+
+### 4 threads (`-t 4`)
+
+| systems | topics | B | before (us/trial) | after (us/trial) | speedup |
+|--:|--:|--:|--:|--:|--:|
+| 5 | 50 | 1000 | 0.23 | 0.29 | 0.81x |
+| 5 | 50 | 10000 | 0.21 | 0.21 | 1.00x |
+| 5 | 100 | 1000 | 0.41 | 0.42 | 0.98x |
+| 5 | 100 | 10000 | 0.40 | 0.40 | 1.00x |
+| 10 | 50 | 1000 | 0.40 | 0.38 | 1.05x |
+| 10 | 50 | 10000 | 0.36 | 0.34 | 1.06x |
+| 10 | 100 | 1000 | 0.71 | 0.71 | 1.01x |
+| 10 | 100 | 10000 | 0.69 | 0.66 | 1.04x |
+| 20 | 50 | 1000 | 0.80 | 0.71 | 1.12x |
+| 20 | 50 | 10000 | 0.76 | 0.67 | 1.14x |
+| 20 | 100 | 1000 | 1.45 | 1.35 | 1.07x |
+| 20 | 100 | 10000 | 1.40 | 1.32 | 1.06x |
+| 50 | 50 | 1000 | 2.41 | 1.72 | 1.40x |
+| 50 | 50 | 10000 | 2.41 | 1.66 | 1.45x |
+| 50 | 100 | 1000 | 4.03 | 3.33 | 1.21x |
+| 50 | 100 | 10000 | 4.06 | 3.33 | 1.22x |
+| 100 | 50 | 1000 | 6.99 | 3.40 | 2.06x |
+| 100 | 50 | 10000 | 7.00 | 3.34 | 2.10x |
+| 100 | 100 | 1000 | 10.46 | 6.66 | 1.57x |
+| 100 | 100 | 10000 | 10.45 | 6.67 | 1.57x |
+
+### 10 threads (`-t 10`)
+
+| systems | topics | B | before (us/trial) | after (us/trial) | speedup |
+|--:|--:|--:|--:|--:|--:|
+| 5 | 50 | 1000 | 0.21 | 0.22 | 0.95x |
+| 5 | 50 | 10000 | 0.15 | 0.15 | 1.00x |
+| 5 | 100 | 1000 | 0.37 | 0.37 | 1.00x |
+| 5 | 100 | 10000 | 0.27 | 0.27 | 1.00x |
+| 10 | 50 | 1000 | 0.33 | 0.31 | 1.06x |
+| 10 | 50 | 10000 | 0.23 | 0.21 | 1.10x |
+| 10 | 100 | 1000 | 0.54 | 0.51 | 1.06x |
+| 10 | 100 | 10000 | 0.42 | 0.39 | 1.08x |
+| 20 | 50 | 1000 | 0.60 | 0.51 | 1.18x |
+| 20 | 50 | 10000 | 0.49 | 0.39 | 1.26x |
+| 20 | 100 | 1000 | 0.96 | 0.88 | 1.09x |
+| 20 | 100 | 10000 | 0.85 | 0.75 | 1.13x |
+| 50 | 50 | 1000 | 1.82 | 1.09 | 1.67x |
+| 50 | 50 | 10000 | 1.66 | 0.94 | 1.77x |
+| 50 | 100 | 1000 | 2.77 | 2.00 | 1.39x |
+| 50 | 100 | 10000 | 2.59 | 1.89 | 1.37x |
+| 100 | 50 | 1000 | 5.27 | 2.09 | 2.52x |
+| 100 | 50 | 10000 | 4.89 | 1.94 | 2.52x |
+| 100 | 100 | 1000 | 7.54 | 4.01 | 1.88x |
+| 100 | 100 | 10000 | 6.53 | 3.84 | 1.70x |
 
 ## Caveats
 
