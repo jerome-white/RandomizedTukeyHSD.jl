@@ -8,7 +8,7 @@ function pvalues_with(threads)
     Random.seed!(11)
     results = randomized_tukey_hsd(scores; B=1000)
     println(join([ r.pvalue for r in results ], ","))
-    results = randomized_tukey_hsd(scores; B=1000, rng=Xoshiro(11))
+    results = randomized_tukey_hsd(Xoshiro(11), scores; B=1000)
     println(join([ r.pvalue for r in results ], ","))
     """
     julia = Base.julia_cmd()

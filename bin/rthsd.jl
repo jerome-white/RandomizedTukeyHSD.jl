@@ -73,13 +73,12 @@ log10_arrangements = round(nrow(df) * perms; digits=2)
 seed = args["seed"]
 rng = seed === nothing ? Random.default_rng() : Xoshiro(seed)
 
-chunk = RandomizedTukeyHSD.CHUNK
-@info "Settings" B=args["B"] seed chunk log10_arrangements
+@info "Settings" B=args["B"] seed log10_arrangements
 
-results = randomized_tukey_hsd(Matrix{Float64}(df);
+results = randomized_tukey_hsd(rng,
+                               Matrix{Float64}(df);
                                B=args["B"],
-                               systems=names(df),
-                               rng=rng)
+                               systems=names(df))
 
 #
 # report

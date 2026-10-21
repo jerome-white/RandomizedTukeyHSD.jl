@@ -65,6 +65,23 @@ end
     end
 end
 
+# The chunk size changes the random stream but not the distribution, so every
+# size must agree with the exact p-values: one trial per task, a size that
+# does not divide B, the default, and one larger than B (a single task).
+@testset "chunk size $chunk" for chunk in (1, 7, 64, 50_001)
+    (scores, systems) = read_scores(joinpath(DATA, "distinct.csv"))
+    exact = exact_pvalues(scores)
+    B = 50_000
+
+    results = RandomizedTukeyHSD._randomized_tukey_hsd(
+        Xoshiro(chunk), scores, B, systems, chunk
+    )
+
+    for (r, p) in zip(results, exact)
+        @test abs(r.pvalue - p) <= tolerance(p, B)
+    end
+end
+
 # tiny.csv has scores on a 0.05 grid, so 12 of its 1296 arrangements have a
 # range that equals the observed A-B difference mathematically but not in
 # floating point. The library compares with a plain >= and deliberately has

@@ -62,18 +62,18 @@ julia -t auto --project=bin bin/rthsd.jl --B 100000 < scores.csv
 
 The trials are cut into chunks of 64, whichever number of threads is used.
 Each chunk gets its own seed, drawn up front from the random number
-generator you pass as `rng` (the global one by default), and its own
-buffers. So with a fixed `rng` state the p-values are the same at any
-thread count:
+generator you pass first, as in `rand(rng, ...)` (the global one if left
+out), and its own buffers. So with a fixed `rng` state the p-values are
+the same at any thread count:
 
 ```julia
 using Random
-randomized_tukey_hsd(scores; B=100_000, rng=Xoshiro(1))
+randomized_tukey_hsd(Xoshiro(1), scores; B=100_000)
 ```
 
-Seeding the global generator (`Random.seed!(1)`) and leaving `rng` out
-does the same. The CLI takes `--seed`, and prints the settings it used
-(`B`, the seed, the chunk size) to stderr:
+Seeding the global generator (`Random.seed!(1)`) and leaving it out does
+the same. The CLI takes `--seed`, and prints the settings it used (`B`,
+the seed) to stderr:
 
 ```bash
 julia --project=bin bin/rthsd.jl --B 100000 --seed 1 < scores.csv
@@ -86,10 +86,10 @@ What this does and does not promise:
 - The same seed, `B`, scores and Julia version give the same p-values on
   any machine and thread count. Across Julia versions the random streams
   (`Xoshiro`, `shuffle!`) are not guaranteed to stay the same.
-- The chunk size (a constant, `RandomizedTukeyHSD.CHUNK`) is part of the
-  result: changing it, or the number of random numbers a trial draws,
-  changes the output for a fixed seed, so it may change between package
-  versions. Record the package version with the seed.
+- The chunk size (64, an internal default that is not a public parameter)
+  is part of the result: changing it, or the number of random numbers a
+  trial draws, changes the output for a fixed seed, so it may change
+  between package versions. Record the package version with the seed.
 - It is a safeguard for an exact re-run, not for the conclusions. A
   p-value has a Monte Carlo error of about `sqrt(p(1 - p) / B)` (0.0007
   for p = 0.05 and `B` = 100 000), so choose `B` large enough that the
