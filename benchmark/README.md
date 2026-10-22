@@ -17,8 +17,9 @@ The environment needs Julia 1.11 or newer (`[sources]`). The
 script prints a Markdown table of the median and minimum time over 10
 samples, microseconds per trial, memory and allocation count for each
 combination of 5/10/20/50/100 treatments, 50/100 blocks and 1000/10000 trials,
-on seeded random responses. It prints the Julia version, CPU, thread configuration and
-load average first, so a result can be tied to its environment.
+on seeded random responses. It prints the Julia version, CPU, thread
+configuration and load average first, so a result can be tied to its
+environment.
 
 ## Baseline
 
