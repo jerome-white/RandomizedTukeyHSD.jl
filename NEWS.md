@@ -44,6 +44,11 @@ Sakai's code have the header `treatment1,treatment2,difference,p`.
   data (#41, #48).
 - Results for a fixed generator state are the same at any number of
   threads (#24, #25).
+- `pvalue_interval(pvalue, trials; level=0.95)` and
+  `probability_below(pvalue, trials, alpha)` describe the Monte Carlo
+  error of a p-value: a highest density interval of the exact p-value under
+  a uniform prior, and the probability it is below `alpha` (#55). The result
+  is unchanged. This adds the dependency SpecialFunctions.
 
 ### Removed
 
