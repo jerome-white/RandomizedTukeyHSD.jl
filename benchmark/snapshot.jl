@@ -11,22 +11,23 @@ const DATA = joinpath(@__DIR__, "..", "test", "data")
 
 function main()
     for name in ("tiny", "ties", "distinct")
-        (scores, systems) = read_scores(joinpath(DATA, "$name.csv"))
+        (responses, treatments) = read_responses(joinpath(DATA, "$name.csv"))
 
         Random.seed!(42)
-        for r in randomized_tukey_hsd(scores; trials=5000, treatments=systems)
+        for r in randomized_tukey_hsd(responses; trials=5000,
+                                      treatments=treatments)
             println(name, " ", r.treatment1, " ", r.treatment2, " ",
                     repr(r.mean1), " ", repr(r.mean2), " ", repr(r.pvalue))
         end
     end
 
-    for (ntopics, nsystems) in ((100, 8), (50, 20))
-        scores = rand(Xoshiro(7), ntopics, nsystems)
+    for (nblocks, ntreatments) in ((100, 8), (50, 20))
+        responses = rand(Xoshiro(7), nblocks, ntreatments)
 
         Random.seed!(42)
-        for r in randomized_tukey_hsd(scores; trials=2000)
-            println(ntopics, "x", nsystems, " ", r.treatment1, " ", r.treatment2,
-                    " ", repr(r.pvalue))
+        for r in randomized_tukey_hsd(responses; trials=2000)
+            println(nblocks, "x", ntreatments, " ", r.treatment1, " ",
+                    r.treatment2, " ", repr(r.pvalue))
         end
     end
 end
