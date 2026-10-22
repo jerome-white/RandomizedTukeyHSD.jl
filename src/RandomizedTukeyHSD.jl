@@ -2,11 +2,13 @@ module RandomizedTukeyHSD
 
 using Random
 using Statistics
+using Tables
 using Base.Threads
 
 export randomized_tukey_hsd
 
 include("input.jl")
+include("tables.jl")
 
 """
     randomized_tukey_hsd([rng,] scores; trials, systems=axes(scores, 2))

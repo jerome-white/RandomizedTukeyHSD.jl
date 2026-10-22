@@ -22,8 +22,8 @@ using Pkg
 Pkg.add(url="https://github.com/jerome-white/RandomizedTukeyHSD.jl")
 ```
 
-The library needs Julia 1.9 or newer and depends only on `Random` and
-`Statistics`.
+The library needs Julia 1.9 or newer and depends only on `Random`,
+`Statistics` and `Tables`.
 
 ## Using the library
 
@@ -50,6 +50,31 @@ tuples is a [Tables.jl](https://tables.juliadata.org) table, so
 `DataFrame(results)` and `CSV.write(io, results)` work without this
 package depending on either. The docstring (`?randomized_tukey_hsd`) lists
 the errors it throws.
+
+### Passing a table
+
+Names travel with the data when you pass a
+[Tables.jl](https://tables.juliadata.org) table, such as a `DataFrame`;
+there is no `systems` argument then. Which shape the table has is told by
+the column keywords, each a column name as a `Symbol` or a `String`.
+
+```julia
+# wide: each column is a treatment, each row a block
+randomized_tukey_hsd(Xoshiro(1), df; trials=10_000)
+# the same, leaving out a column that identifies the rows
+randomized_tukey_hsd(Xoshiro(1), df; trials=10_000, block=:dataset)
+
+# tidy: one row per block and treatment
+randomized_tukey_hsd(Xoshiro(1), df; trials=10_000,
+                     block=:dataset, treatment=:model, value=:accuracy)
+```
+
+Wide names the treatments by the column names, as the table gives them
+(`Symbol`s). Tidy names them by the values of the `treatment` column, and
+takes blocks and treatments in the order they first appear. A missing
+score, or a block and treatment with no row, is rejected like a `NaN`. A
+real matrix still takes the matrix method above. The library does not
+depend on DataFrames; any table works.
 
 ## Running the CLI
 

@@ -9,4 +9,5 @@ include("helpers.jl")
     include("threads.jl")
     include("tables.jl")
     include("input.jl")
+    include("table_input.jl")
 end
