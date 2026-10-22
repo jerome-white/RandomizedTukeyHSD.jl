@@ -5,9 +5,10 @@ using Statistics
 using Tables
 using Base.Threads
 
-export randomized_tukey_hsd
+export randomized_tukey_hsd, pvalue_interval, probability_below
 
 include("input.jl")
+include("uncertainty.jl")
 
 """
     randomized_tukey_hsd([rng,] responses; trials,
