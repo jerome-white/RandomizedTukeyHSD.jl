@@ -1,19 +1,38 @@
 # RandomizedTukeyHSD.jl
 
 A Julia implementation of the randomized Tukey HSD test for comparing
-many systems over a shared set of topics. The method is described by
+many treatments (systems, models, methods) over a shared set of blocks
+(topics, datasets, folds). The method is described by
 Carterette ([2012](https://doi.org/10.1145/2094072.2094076)) and
 advocated by Sakai
 ([2018](https://doi.org/10.1007/978-981-13-1199-4_4)).
 
-The test needs no normality assumption. In each of `trials` trials the scores
-are shuffled across systems within every topic, and the largest minus
-the smallest system mean is recorded. A pair's p-value is the fraction
-of trials whose range is at least the pair's observed difference. It is
-not corrected by adding one to the count, so a p-value of 0 means
-p < 1/`trials`.
+The test needs no normality assumption. In each of `trials` trials the
+responses are shuffled across treatments within every block, and the
+largest minus the smallest treatment mean is recorded. A pair's p-value is
+the fraction of trials whose range is at least the pair's observed
+difference. It is not corrected by adding one to the count, so a p-value
+of 0 means p < 1/`trials`.
 
 **Status:** pre-release (`0.1.0-DEV`), not in the General registry.
+
+## Vocabulary
+
+The data are a randomized block design: one measurement of every treatment
+in every block. The package uses the statistical names for the three parts
+and maps to the words of the fields it is used in:
+
+| Here        | In information retrieval | In machine learning   | Formerly |
+|-------------|--------------------------|-----------------------|----------|
+| block       | topic                    | dataset, fold, seed   | topic    |
+| treatment   | system                   | model, method         | system   |
+| response    | score                    | metric, accuracy      | score    |
+| `trials`    | B                        | number of resamples   | `B`      |
+
+The method comes from information retrieval, so the citations above and the
+reference tests (which compare with Sakai's code) keep that tool's own words
+where they quote it. Earlier versions of this package, its issues and its
+pull requests used the words in the last column.
 
 ## Installing
 
@@ -30,22 +49,23 @@ The library needs Julia 1.9 or newer and depends only on `Random`,
 ```julia
 using Random, RandomizedTukeyHSD
 
-# scores: a topics × systems matrix
-results = randomized_tukey_hsd(Xoshiro(1), scores; trials=10_000,
-                               systems=["A", "B", "C"])
+# responses: a blocks × treatments matrix
+results = randomized_tukey_hsd(Xoshiro(1), responses; trials=10_000,
+                               treatments=["A", "B", "C"])
 ```
 
-- `scores`: topics in rows, systems in columns. It must have at least two
-  columns and no `NaN` (see [Missing scores](#missing-scores)).
+- `responses`: blocks in rows, treatments in columns. It must have at
+  least two columns and no `NaN` (see
+  [Missing responses](#missing-responses)).
 - `trials`: the number of trials, required (called `B` in the literature
   and in earlier versions of this package).
-- `systems`: one name per column; defaults to the column numbers.
+- `treatments`: one name per column; defaults to the column numbers.
 - `rng`: optional first argument, a random number generator
   (see [Threads and reproducibility](#threads-and-reproducibility)).
 
-`results` has one named tuple per pair of systems, in the order
-(1,2), (1,3), ..., (n-1,n), with the fields `system1`, `system2`, `mean1`,
-`mean2`, `difference` (`mean1 - mean2`) and `pvalue`. A vector of named
+`results` has one named tuple per pair of treatments, in the order
+(1,2), (1,3), ..., (n-1,n), with the fields `treatment1`, `treatment2`,
+`mean1`, `mean2`, `difference` (`mean1 - mean2`) and `pvalue`. A vector of named
 tuples is a [Tables.jl](https://tables.juliadata.org) table, so
 `DataFrame(results)` and `CSV.write(io, results)` work without this
 package depending on either. The docstring (`?randomized_tukey_hsd`) lists
@@ -55,7 +75,7 @@ the errors it throws.
 
 Names travel with the data when you pass a
 [Tables.jl](https://tables.juliadata.org) table, such as a `DataFrame`;
-there is no `systems` argument then. Which shape the table has is told by
+there is no `treatments` argument then. Which shape the table has is told by
 the column keywords, each a column name as a `Symbol` or a `String`.
 
 ```julia
@@ -66,13 +86,13 @@ randomized_tukey_hsd(Xoshiro(1), df; trials=10_000, block=:dataset)
 
 # tidy: one row per block and treatment
 randomized_tukey_hsd(Xoshiro(1), df; trials=10_000,
-                     block=:dataset, treatment=:model, value=:accuracy)
+                     block=:dataset, treatment=:model, response=:accuracy)
 ```
 
 Wide names the treatments by the column names, as the table gives them
 (`Symbol`s). Tidy names them by the values of the `treatment` column, and
 takes blocks and treatments in the order they first appear. A missing
-score, or a block and treatment with no row, is rejected like a `NaN`. A
+response, or a block and treatment with no row, is rejected like a `NaN`. A
 real matrix still takes the matrix method above. The library does not
 depend on DataFrames; any table works.
 
@@ -81,11 +101,12 @@ depend on DataFrames; any table works.
 There is no command-line tool: you call the function from your own Julia
 script, as with other Julia packages. `examples/run.jl` is a ten-line
 example that reads a CSV with CSV.jl and DataFrames.jl and writes the
-results as CSV; copy it and change the column names to match your file.
+results as CSV; copy it and change the column names to match your file
+(it expects `block`, `treatment` and `response`).
 
 ```bash
 julia --project=examples -e 'using Pkg; Pkg.instantiate()'
-julia --project=examples examples/run.jl scores.csv 100000 > results.csv
+julia --project=examples examples/run.jl data.csv 100000 > results.csv
 ```
 
 The `examples` environment needs Julia 1.11 or newer, because
@@ -95,23 +116,24 @@ seed. It reads a tidy file (one row per block and treatment); for a wide
 one (one column per treatment), drop the column keywords from the call, as
 described under [Passing a table](#passing-a-table).
 
-## Missing scores
+## Missing responses
 
-A missing or `NaN` score makes the test meaningless, so the library
+A missing or `NaN` response makes the test meaningless, so the library
 rejects `NaN` with an error that says how many there are. Each trial
 shuffles the `NaN` into some treatment, so every trial's range is `NaN`
 and every p-value is meaningless, including those of pairs that do not
 involve the treatment it came from.
 
-What to do is your decision, and it depends on why the scores are missing.
-The sound option is to keep only the blocks that have a score for every
+What to do is your decision, and it depends on why the responses are missing.
+The sound option is to keep only the blocks that have a response for every
 treatment (complete cases). The test is then exactly valid on those blocks,
 because every treatment is still averaged over the same blocks. That is
 right for a block that is undefined for all treatments (for example, a
-topic with no relevant documents), but it flatters a treatment whose
-failures are dropped. Averaging each treatment over only its own blocks
-(`nanmean`) is not offered: it compares treatments on different blocks,
-which defeats the point of the test.
+dataset where the metric is undefined for every model, or, in information
+retrieval, a topic with no relevant documents), but it flatters a
+treatment whose failures are dropped. Averaging each treatment over only
+its own blocks (`nanmean`) is not offered: it compares treatments on
+different blocks, which defeats the point of the test.
 
 With a DataFrame, complete cases are a line or two:
 
@@ -124,7 +146,7 @@ df = filter(row -> all(!isnan, row[Not(:block)]), df)  # NaN; :block is the id
 ntreatments = length(unique(df.treatment))
 usable(x) = !ismissing(x) && !isnan(x)
 df = DataFrame(filter(groupby(df, :block)) do rows
-    nrow(rows) == ntreatments && all(usable, rows.value)
+    nrow(rows) == ntreatments && all(usable, rows.response)
 end)
 ```
 
@@ -133,7 +155,7 @@ end)
 Start Julia with more threads to use them (`-t N`, or `-t auto`):
 
 ```bash
-julia -t auto --project=examples examples/run.jl scores.csv 100000
+julia -t auto --project=examples examples/run.jl data.csv 100000
 ```
 
 The trials are cut into chunks of 64, whichever number of threads is used.
@@ -144,7 +166,7 @@ the same at any thread count:
 
 ```julia
 using Random
-randomized_tukey_hsd(Xoshiro(1), scores; trials=100_000)
+randomized_tukey_hsd(Xoshiro(1), responses; trials=100_000)
 ```
 
 Seeding the global generator (`Random.seed!(1)`) and leaving `rng` out
@@ -152,7 +174,7 @@ does the same. The example script takes a seed as its third argument.
 
 What this does and does not promise:
 
-- The same seed, `trials`, scores and Julia version give the same
+- The same seed, `trials`, responses and Julia version give the same
   p-values on any machine and thread count. Across Julia versions the
   random streams (`Xoshiro`, `shuffle!`) are not guaranteed to stay the
   same.
@@ -170,12 +192,12 @@ What this does and does not promise:
 
 A trial counts when its range is `>=` the observed difference. When a
 permuted range equals the observed difference mathematically but differs
-from it in the last bit, which can happen with scores on a regular grid
+from it in the last bit, which can happen with responses on a regular grid
 such as multiples of 0.05, that trial is not counted. P-values can then be
 slightly too small. There is deliberately no tolerance in the library. In
-the 4-topic example in `test/data/tiny.csv` the pair (A, B) converges to
+the 4-block example in `test/data/tiny.csv` the pair (A, B) converges to
 0.3935 where the mathematical value is 0.4028, which Sakai's Discpower
-gives because it rounds ranges to six decimals. Scores with many distinct
+gives because it rounds ranges to six decimals. Responses with many distinct
 values (most real metrics) are far less likely to be affected. The effect
 is recorded in `test/reference.jl` (issue #17).
 
@@ -183,7 +205,7 @@ is recorded in `test/reference.jl` (issue #17).
 
 `] test` runs the suite, and CI runs it on Julia 1.9 and the latest
 release at one and four threads. Besides unit tests, the library is
-compared with the exact p-values (every within-topic arrangement
+compared with the exact p-values (every within-block arrangement
 enumerated) and with the output of Sakai's own implementation, Discpower,
 on problems small enough to enumerate. See `test/reference/README.md`.
 

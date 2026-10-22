@@ -4,15 +4,15 @@
 #   julia --project=benchmark -t 1 benchmark/randomized_tukey.jl
 #   julia --project=benchmark -t 4 benchmark/randomized_tukey.jl
 #
-# The scores are random but seeded, so every run sees the same data.
+# The responses are random but seeded, so every run sees the same data.
 
 using BenchmarkTools
 using Printf
 using Random
 using RandomizedTukeyHSD
 
-const SYSTEMS = (5, 10, 20, 50, 100)
-const TOPICS = (50, 100)
+const TREATMENTS = (5, 10, 20, 50, 100)
+const BLOCKS = (50, 100)
 const TRIALS = (1_000, 10_000)
 
 function environment()
@@ -25,15 +25,15 @@ function environment()
     println("- Load average: ", join(round.(Sys.loadavg(); digits=2), " "))
 end
 
-function measure(nsystems, ntopics, trials)
-    rng = Xoshiro(nsystems * 1_000_000 + ntopics)
-    scores = rand(rng, ntopics, nsystems)
+function measure(ntreatments, nblocks, trials)
+    rng = Xoshiro(ntreatments * 1_000_000 + nblocks)
+    responses = rand(rng, nblocks, ntreatments)
 
     # compile and warm up outside the measurement
-    randomized_tukey_hsd(scores; trials=10)
+    randomized_tukey_hsd(responses; trials=10)
 
     return @benchmark(
-        randomized_tukey_hsd($scores; trials=$trials),
+        randomized_tukey_hsd($responses; trials=$trials),
         samples=10,
         seconds=60,
         evals=1
@@ -43,16 +43,16 @@ end
 function main()
     environment()
     println()
-    println("| systems | topics | trials | median (ms) | us/trial | ",
+    println("| treatments | blocks | trials | median (ms) | us/trial | ",
             "min (ms) | MiB | allocs |")
     println("|--:|--:|--:|--:|--:|--:|--:|--:|")
 
-    for nsystems in SYSTEMS, ntopics in TOPICS, trials in TRIALS
-        trial = measure(nsystems, ntopics, trials)
+    for ntreatments in TREATMENTS, nblocks in BLOCKS, trials in TRIALS
+        trial = measure(ntreatments, nblocks, trials)
         median_ns = time(median(trial))
         @printf("| %d | %d | %d | %.1f | %.2f | %.1f | %.1f | %d |\n",
-                nsystems,
-                ntopics,
+                ntreatments,
+                nblocks,
                 trials,
                 median_ns / 1e6,
                 median_ns / 1e3 / trials,

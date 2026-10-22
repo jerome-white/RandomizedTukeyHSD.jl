@@ -16,9 +16,10 @@ julia --project=benchmark -t 4 benchmark/randomized_tukey.jl
 The environment needs Julia 1.11 or newer (`[sources]`). The
 script prints a Markdown table of the median and minimum time over 10
 samples, microseconds per trial, memory and allocation count for each
-combination of 5/10/20/50/100 systems, 50/100 topics and B = 1000/10000, on
-seeded random scores. It prints the Julia version, CPU, thread configuration and
-load average first, so a result can be tied to its environment.
+combination of 5/10/20/50/100 treatments, 50/100 blocks and 1000/10000 trials,
+on seeded random responses. It prints the Julia version, CPU, thread
+configuration and load average first, so a result can be tied to its
+environment.
 
 ## Baseline
 
@@ -29,8 +30,11 @@ run gave per-trial times within 2.5% of the first run for every row.
 
 `us/trial` is the median time divided by B.
 
-`B` in the tables below is the `trials` argument, which was called `B` when they
-were recorded (renamed in #39); new runs print `trials` as the column header.
+**Vocabulary.** The tables and the text below are a record of runs made before
+the vocabulary was changed, and are kept as recorded. In them `B` is `trials`
+(renamed in #39), `systems` are treatments, `topics` are blocks and `scores`
+are responses (renamed in #42). New runs print `treatments`, `blocks` and
+`trials` as the column headers.
 
 ### 1 thread (`-t 1`)
 

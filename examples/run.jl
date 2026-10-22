@@ -1,9 +1,9 @@
-# Reads a CSV of scores, runs the randomized Tukey HSD test and writes the
+# Reads a CSV of responses, runs the randomized Tukey HSD test and writes the
 # results as CSV to stdout. An example of using the library from a script,
 # not a supported tool.
 #
-#   julia --project=examples examples/run.jl scores.csv 100000
-#   julia --project=examples examples/run.jl scores.csv 100000 1   # seeded
+#   julia --project=examples examples/run.jl data.csv 100000
+#   julia --project=examples examples/run.jl data.csv 100000 1   # seeded
 #
 # The input has one row per block and treatment, with the columns named
 # below (change them to match your file). For one row per block and one
@@ -20,8 +20,8 @@ df = CSV.read(path, DataFrame)
 
 results = randomized_tukey_hsd(rng, df;
                                trials=trials,
-                               block=:topic,
-                               treatment=:system,
-                               value=:score)
+                               block=:block,
+                               treatment=:treatment,
+                               response=:response)
 
 CSV.write(stdout, results)
