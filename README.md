@@ -76,87 +76,64 @@ score, or a block and treatment with no row, is rejected like a `NaN`. A
 real matrix still takes the matrix method above. The library does not
 depend on DataFrames; any table works.
 
-## Running the CLI
+## Reading a CSV
 
-`bin/rthsd.jl` reads scores and writes the results as CSV. It needs Julia
-1.11 or newer, because `bin/Project.toml` points at the library with a
-`[sources]` path entry.
+There is no command-line tool: you call the function from your own Julia
+script, as with other Julia packages. `examples/run.jl` is a ten-line
+example that reads a CSV with CSV.jl and DataFrames.jl and writes the
+results as CSV; copy it and change the column names to match your file.
 
 ```bash
-julia --project=bin -e 'using Pkg; Pkg.instantiate()'
-julia --project=bin bin/rthsd.jl --trials 10000 scores.csv > results.csv
+julia --project=examples -e 'using Pkg; Pkg.instantiate()'
+julia --project=examples examples/run.jl scores.csv 100000 > results.csv
 ```
 
-The input is a file argument, or stdin if it is missing or `-`.
-
-**Tidy input** (the default) has one row per block and treatment. The
-columns are chosen so that you do not have to rename yours:
-
-- `--block`, `--treatment` and `--value` name them;
-- left out, a role takes the column called `topic`, `system` or `score`;
-- if that still leaves a role open and the file has exactly three
-  columns, the unused ones are taken in the order block, treatment, value.
-
-```
-dataset,model,accuracy
-d1,A,0.81
-d1,B,0.78
-d2,A,0.90
-...
-```
-
-**Wide input** (`--format wide`) has one row per block and one column per
-treatment, the header naming the treatments. `--block NAME` names a column,
-such as an id, to leave out; every other column is a treatment.
-
-```
-dataset,A,B,C
-d1,0.81,0.78,0.80
-d2,0.90,0.86,0.91
-...
-```
-
-In both forms an empty cell, a missing row or a `NaN` is a missing score
-(see [Missing scores](#missing-scores)).
-
-**Output** is CSV on stdout with the columns `S1_name`, `S2_name`,
-`S1_mean`, `S2_mean`, `difference` and `pvalue`, one row per pair. The
-settings used are logged to stderr.
-
-| Option          | Meaning                                         |
-|-----------------|-------------------------------------------------|
-| `--trials N`    | number of trials; required (`-n`, or `--B`)     |
-| `--seed N`      | seed for the generator; otherwise runs differ   |
-| `--format F`    | `tidy` (default) or `wide`                      |
-| `--block C`     | block column (tidy), or a column to skip (wide) |
-| `--treatment C` | treatment column (tidy only)                    |
-| `--value C`     | score column (tidy only)                        |
-| `--missing M`   | `error` (default) or `drop`; see below          |
+The `examples` environment needs Julia 1.11 or newer, because
+`examples/Project.toml` points at the library with a `[sources]` path
+entry. The script takes the path, the number of trials, and an optional
+seed. It reads a tidy file (one row per block and treatment); for a wide
+one (one column per treatment), drop the column keywords from the call, as
+described under [Passing a table](#passing-a-table).
 
 ## Missing scores
 
-A missing or `NaN` score makes the test meaningless, and the library
-rejects `NaN`. Each trial shuffles the `NaN` into some system, so every
-trial's range is `NaN` and every p-value is meaningless, including those
-of pairs that do not involve the system it came from.
+A missing or `NaN` score makes the test meaningless, so the library
+rejects `NaN` with an error that says how many there are. Each trial
+shuffles the `NaN` into some treatment, so every trial's range is `NaN`
+and every p-value is meaningless, including those of pairs that do not
+involve the treatment it came from.
 
-By default the CLI stops with an error naming how many topics are
-affected. `--missing drop` removes every such topic for all systems
-(complete cases) and says how many it removed. The test is then exactly
-valid on the remaining topics, because every system is still averaged over
-the same topics. Whether dropping is appropriate depends on why the
-scores are missing: it is sound for a topic that is undefined for all
-systems (for example, a topic with no relevant documents), but it flatters
-a system whose failures are dropped. Averaging each system over only its
-own topics (`nanmean`) is deliberately not offered: it compares systems on
-different topics, which defeats the point of the test.
+What to do is your decision, and it depends on why the scores are missing.
+The sound option is to keep only the blocks that have a score for every
+treatment (complete cases). The test is then exactly valid on those blocks,
+because every treatment is still averaged over the same blocks. That is
+right for a block that is undefined for all treatments (for example, a
+topic with no relevant documents), but it flatters a treatment whose
+failures are dropped. Averaging each treatment over only its own blocks
+(`nanmean`) is not offered: it compares treatments on different blocks,
+which defeats the point of the test.
+
+With a DataFrame, complete cases are a line or two:
+
+```julia
+# wide: one row per block
+df = dropmissing(df)                                   # empty cells
+df = filter(row -> all(!isnan, row[Not(:block)]), df)  # NaN; :block is the id
+
+# tidy: one row per block and treatment; also drops blocks with a missing row
+ntreatments = length(unique(df.treatment))
+usable(x) = !ismissing(x) && !isnan(x)
+df = DataFrame(filter(groupby(df, :block)) do rows
+    nrow(rows) == ntreatments && all(usable, rows.value)
+end)
+```
 
 ## Threads and reproducibility
 
-Add `-t N` (or `-t auto`) to use more threads:
+Start Julia with more threads to use them (`-t N`, or `-t auto`):
 
 ```bash
-julia -t auto --project=bin bin/rthsd.jl --trials 100000 scores.csv
+julia -t auto --project=examples examples/run.jl scores.csv 100000
 ```
 
 The trials are cut into chunks of 64, whichever number of threads is used.
@@ -170,30 +147,24 @@ using Random
 randomized_tukey_hsd(Xoshiro(1), scores; trials=100_000)
 ```
 
-Seeding the global generator (`Random.seed!(1)`) and leaving it out does
-the same. The CLI takes `--seed`, and prints the settings it used (`trials`,
-the seed) to stderr:
-
-```bash
-julia --project=bin bin/rthsd.jl --trials 100000 --seed 1 scores.csv
-```
-
-Without `--seed` the generator is not seeded and each run differs.
+Seeding the global generator (`Random.seed!(1)`) and leaving `rng` out
+does the same. The example script takes a seed as its third argument.
 
 What this does and does not promise:
 
-- The same seed, `trials`, scores and Julia version give the same p-values on
-  any machine and thread count. Across Julia versions the random streams
-  (`Xoshiro`, `shuffle!`) are not guaranteed to stay the same.
+- The same seed, `trials`, scores and Julia version give the same
+  p-values on any machine and thread count. Across Julia versions the
+  random streams (`Xoshiro`, `shuffle!`) are not guaranteed to stay the
+  same.
 - The chunk size (64, an internal default that is not a public parameter)
   is part of the result: changing it, or the number of random numbers a
   trial draws, changes the output for a fixed seed, so it may change
   between package versions. Record the package version with the seed.
 - It is a safeguard for an exact re-run, not for the conclusions. A
-  p-value has a Monte Carlo error of about `sqrt(p(1 - p) / trials)` (0.0007
-  for p = 0.05 and `trials` = 100 000), so choose `trials` large enough that the
-  decisions do not depend on the seed, and record the seed, `trials` and
-  versions with the results.
+  p-value has a Monte Carlo error of about `sqrt(p(1 - p) / trials)`
+  (0.0007 for p = 0.05 and `trials` = 100 000), so choose `trials` large
+  enough that the decisions do not depend on the seed, and record the
+  seed, `trials` and versions with the results.
 
 ## Known limitation: floating-point ties
 
@@ -221,9 +192,9 @@ performance work, and the tables for each change.
 
 ## Layout
 
-| Path         | Contents                                      |
-|--------------|-----------------------------------------------|
-| `src/`       | the library                                   |
-| `test/`      | the test suite (`] test`) and its references  |
-| `bin/`       | `rthsd.jl`, the CLI, with its own environment |
-| `benchmark/` | benchmark suite and the recorded baseline     |
+| Path         | Contents                                         |
+|--------------|--------------------------------------------------|
+| `src/`       | the library                                      |
+| `test/`      | the test suite (`] test`) and its references     |
+| `examples/`  | `run.jl`, an example script, and its environment |
+| `benchmark/` | benchmark suite and the recorded baseline        |

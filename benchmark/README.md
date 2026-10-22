@@ -13,7 +13,7 @@ julia --project=benchmark -t 1 benchmark/randomized_tukey.jl
 julia --project=benchmark -t 4 benchmark/randomized_tukey.jl
 ```
 
-Like `bin/`, the environment needs Julia 1.11 or newer (`[sources]`). The
+The environment needs Julia 1.11 or newer (`[sources]`). The
 script prints a Markdown table of the median and minimum time over 10
 samples, microseconds per trial, memory and allocation count for each
 combination of 5/10/20/50/100 systems, 50/100 topics and B = 1000/10000, on
