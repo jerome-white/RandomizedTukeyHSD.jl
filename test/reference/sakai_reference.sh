@@ -1,13 +1,15 @@
 #!/bin/sh
 # Computes the p-values of Sakai's own randomised Tukey HSD code (Discpower)
-# for a tidy CSV (topic,system,score), writing system1,system2,difference,p.
+# for a tidy CSV (block,treatment,response), writing
+# treatment1,treatment2,difference,p. (Sakai's tool calls blocks topics and
+# treatments systems; the names here follow the library.)
 #
 #   sh sakai_reference.sh ../data/ties.csv > ../data/ties_sakai.csv
 #
 # Instead of random permutations, Sakai's C program permmat2maxmin is fed
-# every within-topic arrangement, so the p-values are exact and need no
+# every within-block arrangement, so the p-values are exact and need no
 # Monte Carlo tolerance. The counting rule is the one in his Random-test
-# script (`$4 >= diff { count++ }`, with the system means printed by awk).
+# script (`$4 >= diff { count++ }`, with the treatment means printed by awk).
 # His shuffling is not exercised.
 #
 # Needs curl, tar, make, a C compiler, awk and Julia (set JULIA to override).
@@ -37,7 +39,7 @@ echo "$SHA256  $WORK/discpower.tar.gz" | shasum -a 256 -c - >&2
     make >&2
 )
 
-# topic-by-system matrix and system names, in order of first appearance
+# block-by-treatment matrix and treatment names, in order of first appearance
 awk -F, 'NR > 1 {
     if (!($1 in r)) r[$1] = ++nr
     if (!($2 in c)) { c[$2] = ++nc; name[nc] = $2 }
@@ -52,25 +54,25 @@ END {
     for (j = 1; j <= nc; j++) print name[j] > "'"$WORK"'/names"
 }' "$CSV" > "$WORK/matrix"
 
-NTOPICS=$(wc -l < "$WORK/matrix" | tr -d ' ')
-NSYSTEMS=$(wc -l < "$WORK/names" | tr -d ' ')
+NBLOCKS=$(wc -l < "$WORK/matrix" | tr -d ' ')
+NTREATMENTS=$(wc -l < "$WORK/names" | tr -d ' ')
 
 B=$("$JULIA" --project="$HERE/../.." "$HERE/arrangements.jl" \
      "$CSV" "$WORK/arrangements")
 
-"$WORK/permmat2maxmin" "$NSYSTEMS" "$NTOPICS" "$B" "$WORK/arrangements" \
+"$WORK/permmat2maxmin" "$NTREATMENTS" "$NBLOCKS" "$B" "$WORK/arrangements" \
     > "$WORK/maxmin"
 
-# original system means, printed by awk as in Random-test
+# original treatment means, printed by awk as in Random-test
 awk '{ for (i = 1; i <= NF; i++) sum[i] += $i }
      END { for (i = 1; i <= NF; i++) print i, sum[i] / NR }' \
     "$WORK/matrix" > "$WORK/means"
 
-echo "system1,system2,difference,p"
+echo "treatment1,treatment2,difference,p"
 i=1
-while [ "$i" -le "$NSYSTEMS" ]; do
+while [ "$i" -le "$NTREATMENTS" ]; do
     j=$((i + 1))
-    while [ "$j" -le "$NSYSTEMS" ]; do
+    while [ "$j" -le "$NTREATMENTS" ]; do
         M1=$(awk -v k="$i" '$1 == k { print $2; exit }' "$WORK/means")
         M2=$(awk -v k="$j" '$1 == k { print $2; exit }' "$WORK/means")
         N1=$(sed -n "${i}p" "$WORK/names")
