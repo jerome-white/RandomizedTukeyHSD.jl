@@ -2,13 +2,13 @@
 const RT = RandomizedTukeyHSD
 
 @testset "tidy_matrix" begin
-    topics = ["t1", "t1", "t2", "t2", "t3", "t3"]
-    systems = ["B", "A", "B", "A", "A", "B"]
-    scores = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+    blocks = ["b1", "b1", "b2", "b2", "b3", "b3"]
+    treatments = ["B", "A", "B", "A", "A", "B"]
+    responses = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
 
-    (matrix, names) = RT.tidy_matrix(topics, systems, scores)
+    (matrix, names) = RT.tidy_matrix(blocks, treatments, responses)
 
-    # topics and systems in the order they first appear
+    # blocks and treatments in the order they first appear
     @test names == ["B", "A"]
     @test matrix == [
         0.1 0.2
@@ -18,14 +18,14 @@ const RT = RandomizedTukeyHSD
 
     @testset "a pair with no row, and missing, become NaN" begin
         (matrix, names) = RT.tidy_matrix(
-            ["t1", "t1", "t2"], ["A", "B", "A"], [1.0, missing, 3.0]
+            ["b1", "b1", "b2"], ["A", "B", "A"], [1.0, missing, 3.0]
         )
         @test names == ["A", "B"]
         @test matrix[1, 1] == 1.0 && matrix[2, 1] == 3.0
         @test isnan(matrix[1, 2]) && isnan(matrix[2, 2])
     end
 
-    @testset "numbers as system names, integer scores" begin
+    @testset "numbers as treatment names, integer responses" begin
         (matrix, names) = RT.tidy_matrix([1, 1, 2, 2], [10, 20, 10, 20],
                                            [1, 2, 3, 4])
         @test names == [10, 20]
@@ -34,17 +34,17 @@ const RT = RandomizedTukeyHSD
     end
 
     @testset "errors" begin
-        @test_throws DimensionMismatch RT.tidy_matrix(["t1"], ["A", "B"],
+        @test_throws DimensionMismatch RT.tidy_matrix(["b1"], ["A", "B"],
                                                         [1.0, 2.0])
-        @test_throws r"block \"t1\" and treatment \"A\"" RT.tidy_matrix(
-            ["t1", "t1"], ["A", "A"], [1.0, 2.0]
+        @test_throws r"block \"b1\" and treatment \"A\"" RT.tidy_matrix(
+            ["b1", "b1"], ["A", "A"], [1.0, 2.0]
         )
     end
 
     @testset "a matrix built from tidy rows is what the test takes" begin
-        (scores, systems) = read_scores(joinpath(DATA, "tiny.csv"))
-        r = randomized_tukey_hsd(Xoshiro(1), scores; trials=100,
-                                 treatments=systems)
+        (responses, treatments) = read_responses(joinpath(DATA, "tiny.csv"))
+        r = randomized_tukey_hsd(Xoshiro(1), responses; trials=100,
+                                 treatments=treatments)
         @test [ x.treatment1 for x in r ] == ["A", "A", "B"]
     end
 end

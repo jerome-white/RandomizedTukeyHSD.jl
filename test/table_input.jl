@@ -1,14 +1,16 @@
 using DataFrames
 
-# the tables hold the same scores as SCORES (4 topics × 3 systems) so every
-# form can be compared with the matrix method for the same generator state
-const TOPICS = [ "t$i" for i in 1:4 ]
+# the tables hold the same responses as RESPONSES (4 blocks × 3 treatments)
+# so every form can be compared with the matrix method for the same
+# generator state
+const BLOCKS = [ "b$i" for i in 1:4 ]
 
-wide_columns() = (topic=TOPICS,
-                  A=SCORES[:, 1], B=SCORES[:, 2], C=SCORES[:, 3])
+wide_table_of() = (block=BLOCKS,
+                  A=RESPONSES[:, 1], B=RESPONSES[:, 2], C=RESPONSES[:, 3])
 
-function tidy_columns_of(; shuffled=false)
-    rows = [ (TOPICS[i], NAMES[j], SCORES[i, j]) for i in 1:4, j in 1:3 ]
+function tidy_table_of(; shuffled=false)
+    rows = [ (BLOCKS[i], TREATMENTS[j], RESPONSES[i, j])
+             for i in 1:4, j in 1:3 ]
     rows = vec(permutedims(rows))
     shuffled && (rows = rows[randperm(MersenneTwister(1), length(rows))])
 
@@ -18,13 +20,13 @@ function tidy_columns_of(; shuffled=false)
 end
 
 @testset "tables" begin
-    expected = randomized_tukey_hsd(Xoshiro(1), SCORES; trials=500,
-                                    treatments=NAMES)
-    expected_symbols = randomized_tukey_hsd(Xoshiro(1), SCORES; trials=500,
-                                            treatments=Symbol.(NAMES))
+    expected = randomized_tukey_hsd(Xoshiro(1), RESPONSES; trials=500,
+                                    treatments=TREATMENTS)
+    expected_symbols = randomized_tukey_hsd(Xoshiro(1), RESPONSES; trials=500,
+                                            treatments=Symbol.(TREATMENTS))
 
     @testset "wide" begin
-        wide = (A=SCORES[:, 1], B=SCORES[:, 2], C=SCORES[:, 3])
+        wide = (A=RESPONSES[:, 1], B=RESPONSES[:, 2], C=RESPONSES[:, 3])
         @test randomized_tukey_hsd(Xoshiro(1), wide; trials=500) ==
             expected_symbols
 
@@ -34,24 +36,24 @@ end
             [(:A, :B), (:A, :C), (:B, :C)]
 
         # an id column is left out with block, as a Symbol or a String
-        withid = wide_columns()
+        withid = wide_table_of()
         @test randomized_tukey_hsd(Xoshiro(1), withid; trials=500,
-                                   block=:topic) == expected_symbols
+                                   block=:block) == expected_symbols
         @test randomized_tukey_hsd(Xoshiro(1), withid; trials=500,
-                                   block="topic") == expected_symbols
+                                   block="block") == expected_symbols
     end
 
     @testset "tidy" begin
-        tidy = tidy_columns_of()
+        tidy = tidy_table_of()
         @test randomized_tukey_hsd(Xoshiro(1), tidy; trials=500,
                                    block=:dataset, treatment=:model,
                                    response=:accuracy) == expected
 
         # rows in any order give the same pairs and differences (up to the
-        # last bit: the topics are summed in another order). The p-values
+        # last bit: the blocks are summed in another order). The p-values
         # are not compared: another order of appearance puts the treatments
         # in other columns, so the same generator state shuffles differently.
-        shuffled = tidy_columns_of(shuffled=true)
+        shuffled = tidy_table_of(shuffled=true)
         r = randomized_tukey_hsd(Xoshiro(1), shuffled; trials=500,
                                  block="dataset", treatment="model",
                                  response="accuracy")
@@ -63,7 +65,7 @@ end
     end
 
     @testset "other kinds of table" begin
-        wide = (A=SCORES[:, 1], B=SCORES[:, 2], C=SCORES[:, 3])
+        wide = (A=RESPONSES[:, 1], B=RESPONSES[:, 2], C=RESPONSES[:, 3])
 
         # a vector of named tuples (rows)
         rows = [ (A=wide.A[i], B=wide.B[i], C=wide.C[i]) for i in 1:4 ]
@@ -73,33 +75,33 @@ end
         # a DataFrame, wide and tidy
         @test randomized_tukey_hsd(Xoshiro(1), DataFrame(wide);
                                    trials=500) == expected_symbols
-        @test randomized_tukey_hsd(Xoshiro(1), DataFrame(tidy_columns_of());
+        @test randomized_tukey_hsd(Xoshiro(1), DataFrame(tidy_table_of());
                                    trials=500, block=:dataset,
                                    treatment=:model,
                                    response=:accuracy) == expected
     end
 
     @testset "default generator" begin
-        wide = (A=SCORES[:, 1], B=SCORES[:, 2], C=SCORES[:, 3])
+        wide = (A=RESPONSES[:, 1], B=RESPONSES[:, 2], C=RESPONSES[:, 3])
         Random.seed!(2)
         first = randomized_tukey_hsd(wide; trials=500)
         Random.seed!(2)
         @test randomized_tukey_hsd(wide; trials=500) == first
     end
 
-    @testset "missing and absent scores are NaN, then rejected" begin
+    @testset "missing and absent responses are NaN, then rejected" begin
         gap = (A=[0.1, 0.2, 0.3], B=[0.4, missing, 0.6])
         @test_throws r"1 NaN" randomized_tukey_hsd(gap; trials=10)
 
-        tidy = (b=["t1", "t1", "t2"], t=["A", "B", "A"], v=[1.0, 2.0, 3.0])
+        tidy = (b=["b1", "b1", "b2"], t=["A", "B", "A"], v=[1.0, 2.0, 3.0])
         @test_throws r"1 NaN" randomized_tukey_hsd(tidy; trials=10,
                                                    block=:b, treatment=:t,
                                                    response=:v)
     end
 
     @testset "matrices keep taking the matrix method" begin
-        @test randomized_tukey_hsd(Xoshiro(1), SCORES; trials=500,
-                                   treatments=NAMES) == expected
+        @test randomized_tukey_hsd(Xoshiro(1), RESPONSES; trials=500,
+                                   treatments=TREATMENTS) == expected
 
         # not real: would read as a table with columns Column1, ...
         gappy = Union{Missing,Float64}[0.1 0.4; 0.2 missing]
@@ -109,8 +111,8 @@ end
     end
 
     @testset "errors" begin
-        wide = (A=SCORES[:, 1], B=SCORES[:, 2])
-        tidy = tidy_columns_of()
+        wide = (A=RESPONSES[:, 1], B=RESPONSES[:, 2])
+        tidy = tidy_table_of()
         all3 = (block=:dataset, treatment=:model, response=:accuracy)
 
         @test_throws r"expected a matrix or a Tables.jl table" (
@@ -132,7 +134,7 @@ end
         @test_throws ArgumentError randomized_tukey_hsd(
             tidy; trials=0, all3...
         )
-        # names come from the table, so there is no systems argument
+        # names come from the table, so there is no treatments argument
         @test_throws MethodError randomized_tukey_hsd(
             wide; trials=10, treatments=["A", "B"]
         )

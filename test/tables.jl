@@ -4,7 +4,7 @@ using Tables
 # a Tables.jl table, which is what DataFrames, CSV and others consume
 @testset "Tables.jl interface" begin
     Random.seed!(1)
-    results = randomized_tukey_hsd(SCORES; trials=100, treatments=NAMES)
+    results = randomized_tukey_hsd(RESPONSES; trials=100, treatments=TREATMENTS)
     fields = (:treatment1, :treatment2, :mean1, :mean2, :difference, :pvalue)
 
     @test Tables.istable(results)

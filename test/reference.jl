@@ -2,7 +2,7 @@
 # on small problems where the full permutation distribution can be
 # enumerated:
 #
-# - the exact p-values, computed by enumerating every within-topic
+# - the exact p-values, computed by enumerating every within-block
 #   arrangement (helpers.jl), which have no Monte Carlo error;
 # - the p-values of Sakai's own implementation (Discpower), applied to every
 #   arrangement, stored in data/*_sakai.csv (see reference/README.md).
@@ -28,13 +28,13 @@ tolerance(p, trials) = Z * sqrt(p * (1 - p) / trials) + 1 / trials
     ]
     @test length(permutations_of(4)) == 24
 
-    # two topics where A always beats B by 1: the range is 1 when both or
-    # neither topic is swapped, and 0 otherwise
+    # two blocks where A always beats B by 1: the range is 1 when both or
+    # neither block is swapped, and 0 otherwise
     @test exact_pvalues([1.0 0.0; 1.0 0.0]) == [0.5]
 end
 
 @testset "fixtures" begin
-    @test read_scores(joinpath(DATA, "tiny.csv"))[1] == [
+    @test read_responses(joinpath(DATA, "tiny.csv"))[1] == [
         0.10 0.40 0.70
         0.20 0.50 0.60
         0.15 0.45 0.80
@@ -43,12 +43,13 @@ end
 end
 
 @testset "reference: $name" for name in ("ties", "distinct")
-    (scores, systems) = read_scores(joinpath(DATA, "$name.csv"))
+    (responses, treatments) = read_responses(joinpath(DATA, "$name.csv"))
     sakai = read_reference(joinpath(DATA, "$(name)_sakai.csv"))
-    exact = exact_pvalues(scores)
+    exact = exact_pvalues(responses)
 
     Random.seed!(1)
-    results = randomized_tukey_hsd(scores; trials=TRIALS, treatments=systems)
+    results = randomized_tukey_hsd(responses; trials=TRIALS,
+                                   treatments=treatments)
 
     @test length(results) == length(exact) == length(sakai)
 
@@ -70,12 +71,12 @@ end
 # does not divide the number of trials, the default, and one larger than it
 # (a single task).
 @testset "chunk size $chunk" for chunk in (1, 7, 64, 50_001)
-    (scores, systems) = read_scores(joinpath(DATA, "distinct.csv"))
-    exact = exact_pvalues(scores)
+    (responses, treatments) = read_responses(joinpath(DATA, "distinct.csv"))
+    exact = exact_pvalues(responses)
     trials = 50_000
 
     results = RandomizedTukeyHSD._randomized_tukey_hsd(
-        Xoshiro(chunk), scores, trials, systems, chunk
+        Xoshiro(chunk), responses, trials, treatments, chunk
     )
 
     for (r, p) in zip(results, exact)
@@ -83,7 +84,7 @@ end
     end
 end
 
-# tiny.csv has scores on a 0.05 grid, so 12 of its 1296 arrangements have a
+# tiny.csv has responses on a 0.05 grid, so 12 of its 1296 arrangements have a
 # range that equals the observed A-B difference mathematically but not in
 # floating point. The library compares with a plain >= and deliberately has
 # no tolerance (issue #17), so it does not count them and converges to the
@@ -92,10 +93,10 @@ end
 # decimals), giving the mathematical value 0.4028. The @test_broken records
 # that difference and will report an unexpected pass if it ever goes away.
 @testset "floating-point ties (issue #17)" begin
-    (scores, systems) = read_scores(joinpath(DATA, "tiny.csv"))
+    (responses, treatments) = read_responses(joinpath(DATA, "tiny.csv"))
     sakai = read_reference(joinpath(DATA, "tiny_sakai.csv"))
-    exact = exact_pvalues(scores)
-    plain = exact_pvalues(scores; tol=0.0)
+    exact = exact_pvalues(responses)
+    plain = exact_pvalues(responses; tol=0.0)
 
     @test sakai[("A", "B")][2] ≈ exact[1] atol=PRINTED
     @test exact[1] ≈ 0.40277777777777777
@@ -104,7 +105,8 @@ end
 
     trials = 4 * TRIALS
     Random.seed!(1)
-    results = randomized_tukey_hsd(scores; trials=trials, treatments=systems)
+    results = randomized_tukey_hsd(responses; trials=trials,
+                                   treatments=treatments)
 
     # what the library says it computes
     for (r, p) in zip(results, plain)
