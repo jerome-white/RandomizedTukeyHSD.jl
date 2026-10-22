@@ -8,7 +8,6 @@ using Base.Threads
 export randomized_tukey_hsd
 
 include("input.jl")
-include("tables.jl")
 
 """
     randomized_tukey_hsd([rng,] scores; trials, systems=axes(scores, 2))
@@ -68,6 +67,59 @@ function randomized_tukey_hsd(rng::AbstractRNG,
     nans == 0 || throw(ArgumentError("scores contain $nans NaN values"))
 
     return _randomized_tukey_hsd(rng, scores, trials, systems)
+end
+
+"""
+    randomized_tukey_hsd([rng,] table; trials, block, treatment, value)
+
+The same test on a [Tables.jl](https://tables.juliadata.org) table, such as
+a `DataFrame`, so that the names of the treatments come with the data. The
+shape is told by which of `block`, `treatment` and `value` are given; each
+is the name of a column, as a `Symbol` or a `String`.
+
+- **Wide**, with none given: each column is a treatment and each row a
+  block. The result names the treatments by the column names, as `Symbol`s,
+  as the table gives them.
+  Pass only `block` to leave out a column that identifies the rows.
+- **Tidy**, with all three given: one row per block and treatment, with the
+  block in column `block`, the treatment in `treatment` and the score in
+  `value`. The treatments are named by the values of the `treatment`
+  column, and blocks and treatments are taken in the order they first
+  appear.
+
+A `missing` score, and a pair of block and treatment with no row, become
+`NaN` and are rejected like any other `NaN`. A matrix with real elements
+takes the matrix method instead; there is no `systems` argument here.
+
+Throws an `ArgumentError` if `table` is not a table, if a column does not
+exist, if the roles are given partly, or for the reasons of the matrix
+method.
+
+# Example
+
+```julia
+table = (topic=["t1", "t1", "t2", "t2", "t3", "t3"],
+         system=["A", "B", "A", "B", "A", "B"],
+         score=[0.1, 0.4, 0.2, 0.5, 0.15, 0.45])
+randomized_tukey_hsd(table; trials=1_000, block=:topic, treatment=:system,
+                     value=:score)
+```
+"""
+function randomized_tukey_hsd(rng::AbstractRNG,
+                              table;
+                              trials::Integer,
+                              block=nothing,
+                              treatment=nothing,
+                              value=nothing)
+    (scores, treatments) = _table_scores(table, block, treatment, value)
+
+    return randomized_tukey_hsd(rng, scores;
+                                trials=trials,
+                                systems=treatments)
+end
+
+function randomized_tukey_hsd(table; kwargs...)
+    return randomized_tukey_hsd(Random.default_rng(), table; kwargs...)
 end
 
 # All pairs (j, k) with j < k, in the order (1,2), (1,3), ..., (n-1,n).
