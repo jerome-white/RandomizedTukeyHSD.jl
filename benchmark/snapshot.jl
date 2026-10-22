@@ -14,8 +14,8 @@ function main()
         (scores, systems) = read_scores(joinpath(DATA, "$name.csv"))
 
         Random.seed!(42)
-        for r in randomized_tukey_hsd(scores; trials=5000, systems=systems)
-            println(name, " ", r.system1, " ", r.system2, " ",
+        for r in randomized_tukey_hsd(scores; trials=5000, treatments=systems)
+            println(name, " ", r.treatment1, " ", r.treatment2, " ",
                     repr(r.mean1), " ", repr(r.mean2), " ", repr(r.pvalue))
         end
     end
@@ -25,7 +25,7 @@ function main()
 
         Random.seed!(42)
         for r in randomized_tukey_hsd(scores; trials=2000)
-            println(ntopics, "x", nsystems, " ", r.system1, " ", r.system2,
+            println(ntopics, "x", nsystems, " ", r.treatment1, " ", r.treatment2,
                     " ", repr(r.pvalue))
         end
     end

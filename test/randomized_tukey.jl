@@ -18,11 +18,11 @@ end
 
 @testset "randomized_tukey_hsd" begin
     Random.seed!(1)
-    results = randomized_tukey_hsd(SCORES; trials=NTRIALS, systems=NAMES)
+    results = randomized_tukey_hsd(SCORES; trials=NTRIALS, treatments=NAMES)
 
     @testset "pairs" begin
         @test length(results) == 3
-        @test [ (r.system1, r.system2) for r in results ] ==
+        @test [ (r.treatment1, r.treatment2) for r in results ] ==
             [("A", "B"), ("A", "C"), ("B", "C")]
     end
 
@@ -48,8 +48,8 @@ end
 
     @testset "identical systems always get p = 1" begin
         X = hcat(SCORES, SCORES[:, 1])
-        r = randomized_tukey_hsd(X; trials=100, systems=["A", "B", "C", "A2"])
-        i = findfirst(x -> (x.system1, x.system2) == ("A", "A2"), r)
+        r = randomized_tukey_hsd(X; trials=100, treatments=["A", "B", "C", "A2"])
+        i = findfirst(x -> (x.treatment1, x.treatment2) == ("A", "A2"), r)
         @test r[i].difference == 0
         @test r[i].pvalue == 1
     end
@@ -95,7 +95,7 @@ end
 
         # the default is 64
         @test run(64) == randomized_tukey_hsd(Xoshiro(1), SCORES; trials=100,
-                                              systems=NAMES)
+                                              treatments=NAMES)
 
         # it is part of the stream: the same size repeats, another differs
         @test run(10) == run(10)
@@ -110,7 +110,7 @@ end
 
     @testset "default system names are column numbers" begin
         r = randomized_tukey_hsd(SCORES; trials=10)
-        @test (r[1].system1, r[1].system2) == (1, 2)
+        @test (r[1].treatment1, r[1].treatment2) == (1, 2)
     end
 
     @testset "input is not modified" begin
@@ -131,7 +131,7 @@ end
         @test_throws ArgumentError randomized_tukey_hsd(SCORES[:, 1:1];
                                                         trials=10)
         @test_throws DimensionMismatch randomized_tukey_hsd(
-            SCORES; trials=10, systems=["A", "B"]
+            SCORES; trials=10, treatments=["A", "B"]
         )
     end
 end

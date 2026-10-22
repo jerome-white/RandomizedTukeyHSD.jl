@@ -48,12 +48,12 @@ end
     exact = exact_pvalues(scores)
 
     Random.seed!(1)
-    results = randomized_tukey_hsd(scores; trials=TRIALS, systems=systems)
+    results = randomized_tukey_hsd(scores; trials=TRIALS, treatments=systems)
 
     @test length(results) == length(exact) == length(sakai)
 
     for (r, p) in zip(results, exact)
-        pair = (r.system1, r.system2)
+        pair = (r.treatment1, r.treatment2)
         (sakai_difference, sakai_pvalue) = sakai[pair]
 
         @testset "$(join(pair, " vs "))" begin
@@ -104,7 +104,7 @@ end
 
     trials = 4 * TRIALS
     Random.seed!(1)
-    results = randomized_tukey_hsd(scores; trials=trials, systems=systems)
+    results = randomized_tukey_hsd(scores; trials=trials, treatments=systems)
 
     # what the library says it computes
     for (r, p) in zip(results, plain)

@@ -19,9 +19,9 @@ end
 
 @testset "tables" begin
     expected = randomized_tukey_hsd(Xoshiro(1), SCORES; trials=500,
-                                    systems=NAMES)
+                                    treatments=NAMES)
     expected_symbols = randomized_tukey_hsd(Xoshiro(1), SCORES; trials=500,
-                                            systems=Symbol.(NAMES))
+                                            treatments=Symbol.(NAMES))
 
     @testset "wide" begin
         wide = (A=SCORES[:, 1], B=SCORES[:, 2], C=SCORES[:, 3])
@@ -30,7 +30,7 @@ end
 
         # names come with the data, as the Symbols the table gives
         r = randomized_tukey_hsd(Xoshiro(1), wide; trials=500)
-        @test [ (x.system1, x.system2) for x in r ] ==
+        @test [ (x.treatment1, x.treatment2) for x in r ] ==
             [(:A, :B), (:A, :C), (:B, :C)]
 
         # an id column is left out with block, as a Symbol or a String
@@ -45,7 +45,7 @@ end
         tidy = tidy_columns_of()
         @test randomized_tukey_hsd(Xoshiro(1), tidy; trials=500,
                                    block=:dataset, treatment=:model,
-                                   value=:accuracy) == expected
+                                   response=:accuracy) == expected
 
         # rows in any order give the same pairs and differences (up to the
         # last bit: the topics are summed in another order). The p-values
@@ -54,8 +54,8 @@ end
         shuffled = tidy_columns_of(shuffled=true)
         r = randomized_tukey_hsd(Xoshiro(1), shuffled; trials=500,
                                  block="dataset", treatment="model",
-                                 value="accuracy")
-        key(x) = Set([x.system1, x.system2])
+                                 response="accuracy")
+        key(x) = Set([x.treatment1, x.treatment2])
         got = Dict(key(x) => abs(x.difference) for x in r)
         want = Dict(key(x) => abs(x.difference) for x in expected)
         @test keys(got) == keys(want)
@@ -76,7 +76,7 @@ end
         @test randomized_tukey_hsd(Xoshiro(1), DataFrame(tidy_columns_of());
                                    trials=500, block=:dataset,
                                    treatment=:model,
-                                   value=:accuracy) == expected
+                                   response=:accuracy) == expected
     end
 
     @testset "default generator" begin
@@ -94,12 +94,12 @@ end
         tidy = (b=["t1", "t1", "t2"], t=["A", "B", "A"], v=[1.0, 2.0, 3.0])
         @test_throws r"1 NaN" randomized_tukey_hsd(tidy; trials=10,
                                                    block=:b, treatment=:t,
-                                                   value=:v)
+                                                   response=:v)
     end
 
     @testset "matrices keep taking the matrix method" begin
         @test randomized_tukey_hsd(Xoshiro(1), SCORES; trials=500,
-                                   systems=NAMES) == expected
+                                   treatments=NAMES) == expected
 
         # not real: would read as a table with columns Column1, ...
         gappy = Union{Missing,Float64}[0.1 0.4; 0.2 missing]
@@ -111,7 +111,7 @@ end
     @testset "errors" begin
         wide = (A=SCORES[:, 1], B=SCORES[:, 2])
         tidy = tidy_columns_of()
-        all3 = (block=:dataset, treatment=:model, value=:accuracy)
+        all3 = (block=:dataset, treatment=:model, response=:accuracy)
 
         @test_throws r"expected a matrix or a Tables.jl table" (
             randomized_tukey_hsd(5; trials=10)
@@ -119,22 +119,22 @@ end
         @test_throws r"no column :nope for the block" randomized_tukey_hsd(
             wide; trials=10, block=:nope
         )
-        @test_throws r"give block, treatment and value" randomized_tukey_hsd(
+        @test_throws r"give block, treatment and response" randomized_tukey_hsd(
             tidy; trials=10, block=:dataset, treatment=:model
         )
-        @test_throws r"give block, treatment and value" randomized_tukey_hsd(
-            tidy; trials=10, value=:accuracy
+        @test_throws r"give block, treatment and response" randomized_tukey_hsd(
+            tidy; trials=10, response=:accuracy
         )
         @test_throws r"different columns" randomized_tukey_hsd(
             tidy; trials=10, block=:dataset, treatment=:dataset,
-            value=:accuracy
+            response=:accuracy
         )
         @test_throws ArgumentError randomized_tukey_hsd(
             tidy; trials=0, all3...
         )
         # names come from the table, so there is no systems argument
         @test_throws MethodError randomized_tukey_hsd(
-            wide; trials=10, systems=["A", "B"]
+            wide; trials=10, treatments=["A", "B"]
         )
     end
 end

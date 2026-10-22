@@ -10,71 +10,76 @@ export randomized_tukey_hsd
 include("input.jl")
 
 """
-    randomized_tukey_hsd([rng,] scores; trials, systems=axes(scores, 2))
+    randomized_tukey_hsd([rng,] responses; trials,
+                         treatments=axes(responses, 2))
 
-Randomized Tukey HSD test over all pairs of systems.
+Randomized Tukey HSD test over all pairs of treatments.
 
-`scores` is a topics × systems matrix. In each of `trials` trials the scores
-are shuffled across systems within every topic, and the largest minus
-the smallest system mean is recorded. A pair's p-value is the fraction
-of trials whose range is at least the pair's observed absolute
-difference in means. A p-value of 0 means no trial reached the
+`responses` is a blocks × treatments matrix. In each of `trials` trials the
+responses are shuffled across treatments within every block, and the
+largest minus the smallest treatment mean is recorded. A pair's p-value is
+the fraction of trials whose range is at least the pair's observed
+absolute difference in means. A p-value of 0 means no trial reached the
 difference, that is, p < 1/`trials`.
 
-`systems` names the columns of `scores`. `rng` is the random number
-generator the trials are drawn from (the global one if left out). With
-the same `rng` state, `trials`, `scores` and Julia version the p-values are
+`treatments` names the columns of `responses`. `rng` is the random number
+generator the trials are drawn from (the global one if left out). With the
+same `rng` state, `trials`, `responses` and Julia version the p-values are
 the same at any number of threads.
 
-Returns one named tuple per pair of systems, in the order (1,2), (1,3),
-..., (n-1,n), with fields `system1`, `system2`, `mean1`, `mean2`,
+Returns one named tuple per pair of treatments, in the order (1,2), (1,3),
+..., (n-1,n), with fields `treatment1`, `treatment2`, `mean1`, `mean2`,
 `difference` (`mean1 - mean2`) and `pvalue`. A vector of named tuples is
 a Tables.jl table.
 
-Throws an `ArgumentError` if `trials` is not positive, if there are fewer than
-two systems, or if `scores` contains `NaN` (one `NaN` makes every p-value
-meaningless, including those of pairs that do not involve its system),
-and a `DimensionMismatch` if `systems` does not have one name per column.
+Throws an `ArgumentError` if `trials` is not positive, if there are fewer
+than two treatments, or if `responses` contains `NaN` (one `NaN` makes
+every p-value meaningless, including those of pairs that do not involve
+its treatment), and a `DimensionMismatch` if `treatments` does not have
+one name per column.
 
 # Example
 
 ```julia
 using Random
-scores = [0.10 0.40 0.70; 0.20 0.50 0.60; 0.15 0.45 0.80; 0.25 0.35 0.65]
-results = randomized_tukey_hsd(Xoshiro(1), scores; trials=10_000,
-                               systems=["A", "B", "C"])
+responses = [0.10 0.40 0.70; 0.20 0.50 0.60; 0.15 0.45 0.80; 0.25 0.35 0.65]
+results = randomized_tukey_hsd(Xoshiro(1), responses; trials=10_000,
+                               treatments=["A", "B", "C"])
 results[2].pvalue   # A against C
 ```
 """
-function randomized_tukey_hsd(scores::AbstractMatrix{<:Real}; kwargs...)
-    return randomized_tukey_hsd(Random.default_rng(), scores; kwargs...)
+function randomized_tukey_hsd(responses::AbstractMatrix{<:Real}; kwargs...)
+    return randomized_tukey_hsd(Random.default_rng(), responses; kwargs...)
 end
 
 function randomized_tukey_hsd(rng::AbstractRNG,
-                              scores::AbstractMatrix{<:Real};
+                              responses::AbstractMatrix{<:Real};
                               trials::Integer,
-                              systems::AbstractVector=axes(scores, 2))
-    nsystems = size(scores, 2)
+                              treatments::AbstractVector=axes(responses, 2))
+    ntreatments = size(responses, 2)
 
     trials > 0 || throw(ArgumentError("trials must be positive, got $trials"))
-    nsystems > 1 || throw(ArgumentError("need at least two systems"))
-    if length(systems) != nsystems
-        msg = "$(length(systems)) system names for $nsystems systems"
+    ntreatments > 1 ||
+        throw(ArgumentError("need at least two treatments"))
+    if length(treatments) != ntreatments
+        msg = "$(length(treatments)) treatment names for " *
+              "$ntreatments treatments"
         throw(DimensionMismatch(msg))
     end
 
-    nans = count(isnan, scores)
-    nans == 0 || throw(ArgumentError("scores contain $nans NaN values"))
+    nans = count(isnan, responses)
+    nans == 0 ||
+        throw(ArgumentError("responses contain $nans NaN values"))
 
-    return _randomized_tukey_hsd(rng, scores, trials, systems)
+    return _randomized_tukey_hsd(rng, responses, trials, treatments)
 end
 
 """
-    randomized_tukey_hsd([rng,] table; trials, block, treatment, value)
+    randomized_tukey_hsd([rng,] table; trials, block, treatment, response)
 
 The same test on a [Tables.jl](https://tables.juliadata.org) table, such as
 a `DataFrame`, so that the names of the treatments come with the data. The
-shape is told by which of `block`, `treatment` and `value` are given; each
+shape is told by which of `block`, `treatment` and `response` are given; each
 is the name of a column, as a `Symbol` or a `String`.
 
 - **Wide**, with none given: each column is a treatment and each row a
@@ -82,14 +87,14 @@ is the name of a column, as a `Symbol` or a `String`.
   as the table gives them.
   Pass only `block` to leave out a column that identifies the rows.
 - **Tidy**, with all three given: one row per block and treatment, with the
-  block in column `block`, the treatment in `treatment` and the score in
-  `value`. The treatments are named by the values of the `treatment`
+  block in column `block`, the treatment in `treatment` and the response in
+  `response`. The treatments are named by the values of the `treatment`
   column, and blocks and treatments are taken in the order they first
   appear.
 
-A `missing` score, and a pair of block and treatment with no row, become
+A `missing` response, and a pair of block and treatment with no row, become
 `NaN` and are rejected like any other `NaN`. A matrix with real elements
-takes the matrix method instead; there is no `systems` argument here.
+takes the matrix method instead; there is no `treatments` argument here.
 
 Throws an `ArgumentError` if `table` is not a table, if a column does not
 exist, if the roles are given partly, or for the reasons of the matrix
@@ -98,11 +103,11 @@ method.
 # Example
 
 ```julia
-table = (topic=["t1", "t1", "t2", "t2", "t3", "t3"],
-         system=["A", "B", "A", "B", "A", "B"],
-         score=[0.1, 0.4, 0.2, 0.5, 0.15, 0.45])
-randomized_tukey_hsd(table; trials=1_000, block=:topic, treatment=:system,
-                     value=:score)
+table = (block=["b1", "b1", "b2", "b2", "b3", "b3"],
+         treatment=["A", "B", "A", "B", "A", "B"],
+         response=[0.1, 0.4, 0.2, 0.5, 0.15, 0.45])
+randomized_tukey_hsd(table; trials=1_000, block=:block, treatment=:treatment,
+                     response=:response)
 ```
 """
 function randomized_tukey_hsd(rng::AbstractRNG,
@@ -110,12 +115,13 @@ function randomized_tukey_hsd(rng::AbstractRNG,
                               trials::Integer,
                               block=nothing,
                               treatment=nothing,
-                              value=nothing)
-    (scores, treatments) = _table_scores(table, block, treatment, value)
+                              response=nothing)
+    (responses, treatments) = _table_responses(table, block, treatment,
+                                               response)
 
-    return randomized_tukey_hsd(rng, scores;
+    return randomized_tukey_hsd(rng, responses;
                                 trials=trials,
-                                systems=treatments)
+                                treatments=treatments)
 end
 
 function randomized_tukey_hsd(table; kwargs...)
@@ -136,14 +142,14 @@ function _pairs(n)
     return pairs
 end
 
-# Fill `ranges` with the range of the system means of that many trials.
-function _trials!(ranges, scores, seed)
-    (ntopics, nsystems) = size(scores)
+# Fill `ranges` with the range of the treatment means of that many trials.
+function _trials!(ranges, responses, seed)
+    (nblocks, ntreatments) = size(responses)
     rng = Xoshiro(seed)
 
-    data = Matrix{Float64}(undef, nsystems, ntopics)
-    data .= transpose(scores)
-    sums = Matrix{Float64}(undef, nsystems, 1)
+    data = Matrix{Float64}(undef, ntreatments, nblocks)
+    data .= transpose(responses)
+    sums = Matrix{Float64}(undef, ntreatments, 1)
 
     for i in eachindex(ranges)
         for col in eachcol(data)
@@ -151,7 +157,7 @@ function _trials!(ranges, scores, seed)
         end
 
         sum!(sums, data)
-        sums ./= ntopics
+        sums ./= nblocks
         ranges[i] = maximum(sums) - minimum(sums)
     end
 
@@ -160,17 +166,17 @@ end
 
 # `chunk` is the number of trials per task. The random stream depends on
 # it, so changing it changes the results for a fixed `rng` state.
-function _randomized_tukey_hsd(rng, scores, trials, systems, chunk=64)
-    nsystems = size(scores, 2)
+function _randomized_tukey_hsd(rng, responses, trials, treatments, chunk=64)
+    ntreatments = size(responses, 2)
 
     #
-    # system means
+    # treatment means
     #
-    sysmeans = vec(mean(scores; dims=1))
-    comparisons = _pairs(nsystems)
+    means = vec(mean(responses; dims=1))
+    comparisons = _pairs(ntreatments)
 
     #
-    # largest minus smallest system mean of every trial; trials are cut
+    # largest minus smallest treatment mean of every trial; trials are cut
     # into chunks that depend only on `trials`, each with its own seed drawn
     # from `rng`, so the ranges do not depend on the number of threads
     #
@@ -181,7 +187,7 @@ function _randomized_tukey_hsd(rng, scores, trials, systems, chunk=64)
     @sync for c in 1:nchunks
         start = (c - 1) * chunk + 1
         stop = min(c * chunk, trials)
-        @spawn _trials!(view(ranges, start:stop), scores, seeds[c])
+        @spawn _trials!(view(ranges, start:stop), responses, seeds[c])
     end
     sort!(ranges)
 
@@ -189,14 +195,14 @@ function _randomized_tukey_hsd(rng, scores, trials, systems, chunk=64)
     # report
     #
     results = map(comparisons) do (j, k)
-        difference = sysmeans[j] - sysmeans[k]
+        difference = means[j] - means[k]
         exceeding = trials - searchsortedfirst(ranges, abs(difference)) + 1
         pvalue = exceeding / trials
 
-        (system1=systems[j],
-         system2=systems[k],
-         mean1=sysmeans[j],
-         mean2=sysmeans[k],
+        (treatment1=treatments[j],
+         treatment2=treatments[k],
+         mean1=means[j],
+         mean2=means[k],
          difference=difference,
          pvalue=pvalue)
     end

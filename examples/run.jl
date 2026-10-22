@@ -22,6 +22,6 @@ results = randomized_tukey_hsd(rng, df;
                                trials=trials,
                                block=:topic,
                                treatment=:system,
-                               value=:score)
+                               response=:score)
 
 CSV.write(stdout, results)
