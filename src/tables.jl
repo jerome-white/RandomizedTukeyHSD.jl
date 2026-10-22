@@ -7,7 +7,8 @@ shape is told by which of `block`, `treatment` and `value` are given; each
 is the name of a column, as a `Symbol` or a `String`.
 
 - **Wide**, with none given: each column is a treatment and each row a
-  block. The result names the treatments by the column names, as strings.
+  block. The result names the treatments by the column names, as `Symbol`s,
+  as the table gives them.
   Pass only `block` to leave out a column that identifies the rows.
 - **Tidy**, with all three given: one row per block and treatment, with the
   block in column `block`, the treatment in `treatment` and the score in
@@ -113,5 +114,5 @@ function _wide_table(columns, available, skipped)
 
     data = [ Tables.getcolumn(columns, name) for name in treatments ]
 
-    return wide_scores(String.(treatments), data)
+    return wide_scores(treatments, data)
 end

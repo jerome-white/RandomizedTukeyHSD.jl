@@ -69,12 +69,12 @@ randomized_tukey_hsd(Xoshiro(1), df; trials=10_000,
                      block=:dataset, treatment=:model, value=:accuracy)
 ```
 
-Wide names the treatments by the column names (as strings). Tidy names
-them by the values of the `treatment` column, and takes blocks and
-treatments in the order they first appear. A missing score, or a block and
-treatment with no row, is rejected like a `NaN`. A real matrix still takes
-the matrix method above. The library does not depend on DataFrames; any
-table works.
+Wide names the treatments by the column names, as the table gives them
+(`Symbol`s). Tidy names them by the values of the `treatment` column, and
+takes blocks and treatments in the order they first appear. A missing
+score, or a block and treatment with no row, is rejected like a `NaN`. A
+real matrix still takes the matrix method above. The library does not
+depend on DataFrames; any table works.
 
 ## Running the CLI
 

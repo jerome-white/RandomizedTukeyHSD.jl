@@ -20,22 +20,25 @@ end
 @testset "tables" begin
     expected = randomized_tukey_hsd(Xoshiro(1), SCORES; trials=500,
                                     systems=NAMES)
+    expected_symbols = randomized_tukey_hsd(Xoshiro(1), SCORES; trials=500,
+                                            systems=Symbol.(NAMES))
 
     @testset "wide" begin
         wide = (A=SCORES[:, 1], B=SCORES[:, 2], C=SCORES[:, 3])
-        @test randomized_tukey_hsd(Xoshiro(1), wide; trials=500) == expected
+        @test randomized_tukey_hsd(Xoshiro(1), wide; trials=500) ==
+            expected_symbols
 
-        # names come with the data, as strings
+        # names come with the data, as the Symbols the table gives
         r = randomized_tukey_hsd(Xoshiro(1), wide; trials=500)
         @test [ (x.system1, x.system2) for x in r ] ==
-            [("A", "B"), ("A", "C"), ("B", "C")]
+            [(:A, :B), (:A, :C), (:B, :C)]
 
         # an id column is left out with block, as a Symbol or a String
         withid = wide_columns()
         @test randomized_tukey_hsd(Xoshiro(1), withid; trials=500,
-                                   block=:topic) == expected
+                                   block=:topic) == expected_symbols
         @test randomized_tukey_hsd(Xoshiro(1), withid; trials=500,
-                                   block="topic") == expected
+                                   block="topic") == expected_symbols
     end
 
     @testset "tidy" begin
@@ -64,11 +67,12 @@ end
 
         # a vector of named tuples (rows)
         rows = [ (A=wide.A[i], B=wide.B[i], C=wide.C[i]) for i in 1:4 ]
-        @test randomized_tukey_hsd(Xoshiro(1), rows; trials=500) == expected
+        @test randomized_tukey_hsd(Xoshiro(1), rows; trials=500) ==
+            expected_symbols
 
         # a DataFrame, wide and tidy
         @test randomized_tukey_hsd(Xoshiro(1), DataFrame(wide);
-                                   trials=500) == expected
+                                   trials=500) == expected_symbols
         @test randomized_tukey_hsd(Xoshiro(1), DataFrame(tidy_columns_of());
                                    trials=500, block=:dataset,
                                    treatment=:model,
