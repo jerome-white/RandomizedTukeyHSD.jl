@@ -44,11 +44,13 @@ Sakai's code have the header `treatment1,treatment2,difference,p`.
   data (#41, #48).
 - Results for a fixed generator state are the same at any number of
   threads (#24, #25).
-- `pvalue_interval(pvalue, trials; level=0.95)` and
-  `probability_below(pvalue, trials, alpha)` describe the Monte Carlo
-  error of a p-value: a highest density interval of the exact p-value under
-  a uniform prior, and the probability it is below `alpha` (#55). The result
-  is unchanged. This adds the dependency SpecialFunctions.
+- `MonteCarloPValue(exceeding, trials)` keeps a p-value with the trials it
+  came from, and `hdi(p; level=0.95, prior=(1, 1))` and
+  `probability_below(p, alpha; prior=(1, 1))` describe its Monte Carlo
+  error: a highest density interval of the exact p-value, and the
+  probability that it is below `alpha`. `pvalue` extends
+  `StatsAPI.pvalue`. The result of `randomized_tukey_hsd` is unchanged.
+  This adds the dependencies SpecialFunctions and StatsAPI (#55).
 
 ### Removed
 
