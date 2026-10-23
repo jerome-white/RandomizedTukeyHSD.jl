@@ -6,12 +6,11 @@ using Tables
 using Base.Threads
 using StatsAPI: pvalue
 
-export randomized_tukey_hsd, pvalue_interval, probability_below
-export MonteCarloPValue, pvalue
+export randomized_tukey_hsd
+export MonteCarloPValue, pvalue, hdi, probability_below
 
 include("input.jl")
 include("pvalue.jl")
-include("uncertainty.jl")
 
 """
     randomized_tukey_hsd([rng,] responses; trials,
