@@ -34,8 +34,9 @@ struct MonteCarloPValue
     trials::Int
 
     function MonteCarloPValue(exceeding::Integer, trials::Integer)
-        trials > 0 ||
+        if trials <= 0
             throw(ArgumentError("trials must be positive, got $trials"))
+        end
         if !(0 <= exceeding <= trials)
             msg = "exceeding must be between 0 and $trials, got $exceeding"
             throw(ArgumentError(msg))
@@ -46,12 +47,14 @@ struct MonteCarloPValue
 end
 
 function MonteCarloPValue(pvalue::AbstractFloat, trials::Integer)
-    trials > 0 || throw(ArgumentError("trials must be positive, got $trials"))
+    if trials <= 0
+        throw(ArgumentError("trials must be positive, got $trials"))
+    end
 
     scaled = pvalue * trials
     exceeding = round(Int, scaled)
-    if !(0 <= pvalue <= 1) || !isapprox(scaled, exceeding;
-                                        atol=1e-6, rtol=1e-12)
+    if !(0 <= pvalue <= 1) ||
+        !isapprox(scaled, exceeding; atol=1e-6, rtol=1e-12)
         msg = "pvalue $pvalue is not a count out of $trials trials"
         throw(ArgumentError(msg))
     end
@@ -60,7 +63,6 @@ function MonteCarloPValue(pvalue::AbstractFloat, trials::Integer)
 end
 
 Base.float(p::MonteCarloPValue) = p.exceeding / p.trials
-
 StatsAPI.pvalue(p::MonteCarloPValue) = float(p)
 
 """
@@ -98,8 +100,9 @@ hdi(MonteCarloPValue(490, 10_000); prior=(0.5, 0.5))
 ```
 """
 function hdi(p::MonteCarloPValue; level::Real=0.95, prior=(1, 1))
-    0 < level < 1 ||
+    if !(0 < level < 1)
         throw(ArgumentError("level must be between 0 and 1, got $level"))
+    end
     (a, b) = _posterior(p, prior)
 
     return _hdi(a, b, level)
@@ -124,8 +127,9 @@ probability_below(MonteCarloPValue(4_900, 100_000), 0.05)   # about 0.93
 ```
 """
 function probability_below(p::MonteCarloPValue, alpha::Real; prior=(1, 1))
-    0 <= alpha <= 1 ||
+    if !(0 <= alpha <= 1)
         throw(ArgumentError("alpha must be between 0 and 1, got $alpha"))
+    end
     (a, b) = _posterior(p, prior)
 
     return _below(a, b, alpha)
@@ -147,16 +151,12 @@ end
 
 # P(exact p-value < x).
 function _below(a, b, x)
-    (below, _) = beta_inc(a, b, x)
-
-    return below
+    return first(beta_inc(a, b, x))
 end
 
 # The point with probability `probability` below it.
 function _quantile(a, b, probability)
-    (x, _) = beta_inc_inv(a, b, probability)
-
-    return x
+    return first(beta_inc_inv(a, b, probability))
 end
 
 # Highest density interval of probability `level`. A density that is highest
@@ -168,15 +168,22 @@ function _hdi(a, b, level)
     tail = 1 - level
 
     if a <= 1
-        return (0.0, _quantile(a, b, level))
+        lower = 0.0
+        upper = _quantile(a, b, level)
     elseif b <= 1
-        return (_quantile(a, b, tail), 1.0)
+        lower = _quantile(a, b, tail)
+        upper = 1.0
+    else
+        lhs = _minimise(
+            x -> _quantile(a, b, x + level) - _quantile(a, b, x),
+            0.0,
+            tail,
+        )
+        lower = _quantile(a, b, lhs)
+        upper = _quantile(a, b, lhs + level)
     end
 
-    width(lower) = _quantile(a, b, lower + level) - _quantile(a, b, lower)
-    lower = _minimise(width, 0.0, tail)
-
-    return (_quantile(a, b, lower), _quantile(a, b, lower + level))
+    return (lower, upper)
 end
 
 # Golden-section search for the minimiser of a function that decreases and
