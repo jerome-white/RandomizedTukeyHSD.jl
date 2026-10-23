@@ -42,7 +42,7 @@ Pkg.add(url="https://github.com/jerome-white/RandomizedTukeyHSD.jl")
 ```
 
 The library needs Julia 1.9 or newer and depends only on `Random`,
-`Statistics` and `Tables`.
+`SpecialFunctions`, `Statistics`, `StatsAPI` and `Tables`.
 
 ## Using the library
 
@@ -150,6 +150,61 @@ df = DataFrame(filter(groupby(df, :block)) do rows
 end)
 ```
 
+## How precise is a p-value?
+
+A p-value from `trials` trials estimates the exact permutation p-value
+(every within-block arrangement counted), and more trials sharpen the
+estimate without changing the data. `MonteCarloPValue` holds a p-value
+together with the number of trials it came from, and `hdi` and
+`probability_below` describe its Monte Carlo error. The result of
+`randomized_tukey_hsd` is unchanged; build the type from a result's
+`pvalue` and `trials`, or from the counts.
+
+```julia
+results = randomized_tukey_hsd(Xoshiro(1), responses; trials=10_000)
+p = MonteCarloPValue(results[2].pvalue, 10_000)
+
+pvalue(p)                         # the p-value, exceeding / trials
+hdi(p)                            # (lower, upper) for the exact p-value
+hdi(p; level=0.9)
+hdi(p; prior=(0.5, 0.5))          # Jeffreys' prior instead of the uniform
+probability_below(p, 0.05)        # probability the exact p-value < 0.05
+
+MonteCarloPValue(49, 1000)        # from the counts: 49 of 1000 trials
+```
+
+- The trials that reached a pair's difference are binomial in the exact
+  p-value. A `prior=(a, b)` is a Beta(`a`, `b`) distribution for it, uniform
+  by default, and its distribution afterwards is a Beta distribution too.
+  `hdi` is that distribution's highest density interval: the shortest one
+  holding `level` (0.95 by default) of the probability. Read it as "given
+  these trials and the prior, the exact p-value is in here with 95%
+  probability".
+- It is a Bayesian credible interval, not a confidence interval, and has no
+  coverage guarantee. The prior is a choice and matters only for small
+  counts; at zero exceedances the upper end is 3.0 / `trials` for the
+  uniform prior and 1.9 / `trials` for Jeffreys'. Only Beta priors are
+  supported.
+- A p-value of 0 gives an interval from 0 to about `3 / trials`: the
+  trials rule out little more than that.
+- `probability_below(p, alpha)` is the chance that the exact p-value is below
+  `alpha`, which shows whether more trials could put the p-value on the other
+  side of it. For an observed 0.049 it is 0.52 at 1000 trials, 0.67 at
+  10 000 and 0.93 at 100 000. The library takes no `alpha` of its own; the
+  decision is yours.
+- The interval covers the Monte Carlo error only: not the assumptions of the
+  test, the floating-point ties below, or that many pairs are tested (the
+  range statistic already accounts for that). The intervals of different
+  pairs are not simultaneous.
+- Decide `trials` and the seed before looking at the results. Running again
+  until a p-value falls below a level, or until its interval does, is not a
+  valid procedure; the interval does not make it one.
+- `pvalue` is the generic function of
+  [StatsAPI](https://github.com/JuliaStats/StatsAPI.jl), which the Julia
+  statistics packages share, so it is the same function after
+  `using HypothesisTests`. `hdi` is not `confint`, which is a
+  confidence interval.
+
 ## Threads and reproducibility
 
 Start Julia with more threads to use them (`-t N`, or `-t auto`):
@@ -184,9 +239,10 @@ What this does and does not promise:
   between package versions. Record the package version with the seed.
 - It is a safeguard for an exact re-run, not for the conclusions. A
   p-value has a Monte Carlo error of about `sqrt(p(1 - p) / trials)`
-  (0.0007 for p = 0.05 and `trials` = 100 000), so choose `trials` large
-  enough that the decisions do not depend on the seed, and record the
-  seed, `trials` and versions with the results.
+  (0.0007 for p = 0.05 and `trials` = 100 000; see
+  [How precise is a p-value?](#how-precise-is-a-p-value)), so choose
+  `trials` large enough that the decisions do not depend on the seed, and
+  record the seed, `trials` and versions with the results.
 
 ## Known limitation: floating-point ties
 

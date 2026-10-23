@@ -4,10 +4,13 @@ using Random
 using Statistics
 using Tables
 using Base.Threads
+using StatsAPI: pvalue
 
 export randomized_tukey_hsd
+export MonteCarloPValue, pvalue, hdi, probability_below
 
 include("input.jl")
+include("pvalue.jl")
 
 """
     randomized_tukey_hsd([rng,] responses; trials,
@@ -58,9 +61,12 @@ function randomized_tukey_hsd(rng::AbstractRNG,
                               treatments::AbstractVector=axes(responses, 2))
     ntreatments = size(responses, 2)
 
-    trials > 0 || throw(ArgumentError("trials must be positive, got $trials"))
-    ntreatments > 1 ||
+    if trials <= 0
+        throw(ArgumentError("trials must be positive, got $trials"))
+    end
+    if ntreatments <= 1
         throw(ArgumentError("need at least two treatments"))
+    end
     if length(treatments) != ntreatments
         msg = "$(length(treatments)) treatment names for " *
               "$ntreatments treatments"
@@ -68,8 +74,9 @@ function randomized_tukey_hsd(rng::AbstractRNG,
     end
 
     nans = count(isnan, responses)
-    nans == 0 ||
+    if nans != 0
         throw(ArgumentError("responses contain $nans NaN values"))
+    end
 
     return _randomized_tukey_hsd(rng, responses, trials, treatments)
 end
