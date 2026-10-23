@@ -4,10 +4,13 @@ using Random
 using Statistics
 using Tables
 using Base.Threads
+using StatsAPI: pvalue
 
 export randomized_tukey_hsd, pvalue_interval, probability_below
+export MonteCarloPValue, pvalue
 
 include("input.jl")
+include("pvalue.jl")
 include("uncertainty.jl")
 
 """

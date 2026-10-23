@@ -10,5 +10,6 @@ include("helpers.jl")
     include("tables.jl")
     include("input.jl")
     include("table_input.jl")
+    include("pvalue.jl")
     include("uncertainty.jl")
 end
