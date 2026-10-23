@@ -165,22 +165,23 @@ end
 # found by searching for the lower tail probability that minimises it. (A
 # and b cannot both be at most 1 for a posterior after at least one trial.)
 function _hdi(a, b, level)
-    tail = 1 - level
-
     if a <= 1
         lower = 0.0
         upper = _quantile(a, b, level)
-    elseif b <= 1
-        lower = _quantile(a, b, tail)
-        upper = 1.0
     else
-        lhs = _minimise(
-            x -> _quantile(a, b, x + level) - _quantile(a, b, x),
-            0.0,
-            tail,
-        )
-        lower = _quantile(a, b, lhs)
-        upper = _quantile(a, b, lhs + level)
+        tail = 1 - level
+        if b <= 1
+            lower = _quantile(a, b, tail)
+            upper = 1.0
+        else
+            lhs = _minimise(
+                x -> _quantile(a, b, x + level) - _quantile(a, b, x),
+                0.0,
+                tail,
+            )
+            lower = _quantile(a, b, lhs)
+            upper = _quantile(a, b, lhs + level)
+        end
     end
 
     return (lower, upper)
