@@ -100,8 +100,8 @@ end
 
 # Arrange a table into a blocks × treatments matrix and the treatment
 # names. `block`, `treatment` and `response` are column names or `nothing`;
-# the docstring of `randomized_tukey_hsd` for tables says what each
-# combination means.
+# the docstring of `RandomizedTukeyProblem` says what each combination
+# means.
 function _table_responses(table, block, treatment, response)
     if table isa AbstractMatrix
         msg = "a matrix must have real elements, got $(eltype(table)); " *
