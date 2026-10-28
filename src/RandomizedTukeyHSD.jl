@@ -4,12 +4,17 @@ using Random
 using Statistics
 using Tables
 using Base.Threads
+using CommonSolve: init, solve, solve!, step!
 using StatsAPI: pvalue
 
 export randomized_tukey_hsd
+export RandomizedTukeyProblem, FixedTrials
+export init, solve, solve!, step!
 export MonteCarloPValue, pvalue, hdi, probability_below
 
 include("input.jl")
+include("problem.jl")
+include("solve.jl")
 include("pvalue.jl")
 
 """
