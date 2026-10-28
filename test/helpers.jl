@@ -1,7 +1,22 @@
-# Support code for the tests: reading the tidy fixtures and computing exact
-# p-values by enumerating every within-block permutation.
+# Support code for the tests: solving with a fixed number of trials, reading
+# the tidy fixtures and computing exact p-values by enumerating every
+# within-block permutation.
 
+using Random
 using Statistics
+
+# Solves with `trials` trials. `input` is a matrix or a table and the other
+# keywords are those of RandomizedTukeyProblem. The generator may come first,
+# as in `rand(rng, ...)`.
+function tukey(rng::AbstractRNG, input; trials, kwargs...)
+    problem = RandomizedTukeyProblem(input; kwargs...)
+
+    return solve(problem, FixedTrials(trials); rng=rng)
+end
+
+function tukey(input; kwargs...)
+    return tukey(Random.default_rng(), input; kwargs...)
+end
 
 # Reads a tidy CSV (block,treatment,response) into a blocks x treatments
 # matrix, with blocks and treatments in order of first appearance.
@@ -43,7 +58,7 @@ function permutations_of(n)
     ]
 end
 
-# The exact p-value of every pair, in the order of randomized_tukey_hsd:
+# The exact p-value of every pair, in the order of the results of solve:
 # the fraction of all equally likely within-block arrangements whose range
 # of treatment means is at least the pair's observed absolute difference.
 # Ranges within `tol` below the observed difference count as equal to it,

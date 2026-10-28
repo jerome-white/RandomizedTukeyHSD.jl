@@ -43,8 +43,8 @@ const RT = RandomizedTukeyHSD
 
     @testset "a matrix built from tidy rows is what the test takes" begin
         (responses, treatments) = read_responses(joinpath(DATA, "tiny.csv"))
-        r = randomized_tukey_hsd(Xoshiro(1), responses; trials=100,
-                                 treatments=treatments)
+        r = tukey(Xoshiro(1), responses; trials=100,
+                  treatments=treatments)
         @test [ x.treatment1 for x in r ] == ["A", "A", "B"]
     end
 end
