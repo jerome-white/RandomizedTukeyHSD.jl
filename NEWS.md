@@ -27,9 +27,10 @@ the words.
 `B` became `trials` in #39 (and `--B` was kept as an alias of the CLI that
 no longer exists); the rest in #42. The first four rows are the public API:
 the keyword and the argument of `randomized_tukey_hsd`, and the fields of
-its result. `value=` is the keyword of the table method (#41), and the two
-helpers are unexported. The last row is the words in documentation,
-identifiers, tests and fixtures.
+its result (the function itself was replaced in #58, below). `value=` is
+the keyword of the table method (#41), and the two helpers are unexported.
+The last row is the words in documentation, identifiers, tests and
+fixtures.
 
 Error messages changed with the words (for example "need at least two
 treatments", "responses contain N NaN values"). The reference fixtures in
@@ -49,8 +50,34 @@ Sakai's code have the header `treatment1,treatment2,difference,p`.
   `probability_below(p, alpha; prior=(1, 1))` describe its Monte Carlo
   error: a highest density interval of the exact p-value, and the
   probability that it is below `alpha`. `pvalue` extends
-  `StatsAPI.pvalue`. The result of `randomized_tukey_hsd` is unchanged.
+  `StatsAPI.pvalue`. The result of `solve` is unchanged.
   This adds the dependencies SpecialFunctions and StatsAPI (#55).
+
+### Changed: the interface is CommonSolve's (#57, #58)
+
+`randomized_tukey_hsd` is removed. The test is now run with the verbs of
+[CommonSolve.jl](https://github.com/SciML/CommonSolve.jl), which are
+re-exported:
+
+```julia
+problem = RandomizedTukeyProblem(responses; treatments=["A", "B", "C"])
+results = solve(problem, FixedTrials(10_000); rng=Xoshiro(1))
+```
+
+- `RandomizedTukeyProblem` is the data. Its constructor checks it (at least
+  two treatments, one name per column, no `NaN`), with the same errors as
+  before. A matrix and a Tables.jl table are the two constructors; a
+  table's shape, wide or tidy, is taken from the `block`, `treatment` and
+  `response` keywords as before.
+- `FixedTrials(trials)` replaces the `trials` keyword.
+- **`rng` is now a keyword** (`rng=Xoshiro(1)`), no longer the first
+  positional argument, because CommonSolve needs the first positional
+  argument to be a type of the package (reverses #26, #31).
+- The result is the same vector of named tuples, and the p-values for a
+  given generator state are the same as before: the output of
+  `benchmark/snapshot.jl` is byte-identical.
+- **The Julia floor is 1.10** (it was 1.9): CommonSolve 0.2.14 needs it.
+- Adds the dependency CommonSolve.
 
 ### Removed
 

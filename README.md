@@ -41,8 +41,8 @@ using Pkg
 Pkg.add(url="https://github.com/jerome-white/RandomizedTukeyHSD.jl")
 ```
 
-The library needs Julia 1.9 or newer and depends only on `Random`,
-`SpecialFunctions`, `Statistics`, `StatsAPI` and `Tables`.
+The library needs Julia 1.10 or newer and depends only on `CommonSolve`,
+`Random`, `SpecialFunctions`, `Statistics`, `StatsAPI` and `Tables`.
 
 ## Using the library
 
@@ -50,17 +50,25 @@ The library needs Julia 1.9 or newer and depends only on `Random`,
 using Random, RandomizedTukeyHSD
 
 # responses: a blocks × treatments matrix
-results = randomized_tukey_hsd(Xoshiro(1), responses; trials=10_000,
-                               treatments=["A", "B", "C"])
+problem = RandomizedTukeyProblem(responses; treatments=["A", "B", "C"])
+results = solve(problem, FixedTrials(10_000); rng=Xoshiro(1))
 ```
 
-- `responses`: blocks in rows, treatments in columns. It must have at
-  least two columns and no `NaN` (see
-  [Missing responses](#missing-responses)).
-- `trials`: the number of trials, required (called `B` in the literature
-  and in earlier versions of this package).
-- `treatments`: one name per column; defaults to the column numbers.
-- `rng`: optional first argument, a random number generator
+The interface is that of
+[CommonSolve.jl](https://github.com/SciML/CommonSolve.jl), the one the SciML
+packages share: a *problem* says what is solved, a *rule* says how, and
+`solve(problem, rule)` is `solve!(init(problem, rule))`. The verbs `init`,
+`solve`, `solve!` and `step!` are re-exported, and they are the same
+functions, so there is no clash with another package that uses them.
+
+- `RandomizedTukeyProblem(responses; treatments)`: the data. `responses`
+  has blocks in rows and treatments in columns, at least two columns and no
+  `NaN` (see [Missing responses](#missing-responses)). `treatments` is one
+  name per column and defaults to the column numbers. A problem is checked
+  when it is built, so an invalid one cannot exist.
+- `FixedTrials(trials)`: the rule, the number of trials (called `B` in the
+  literature and in earlier versions of this package).
+- `rng`: optional keyword of `solve` and `init`, a random number generator
   (see [Threads and reproducibility](#threads-and-reproducibility)).
 
 `results` has one named tuple per pair of treatments, in the order
@@ -68,32 +76,36 @@ results = randomized_tukey_hsd(Xoshiro(1), responses; trials=10_000,
 `mean1`, `mean2`, `difference` (`mean1 - mean2`) and `pvalue`. A vector of named
 tuples is a [Tables.jl](https://tables.juliadata.org) table, so
 `DataFrame(results)` and `CSV.write(io, results)` work without this
-package depending on either. The docstring (`?randomized_tukey_hsd`) lists
-the errors it throws.
+package depending on either. The docstrings (`?RandomizedTukeyProblem`,
+`?solve!`) list the errors it throws.
 
 ### Passing a table
 
-Names travel with the data when you pass a
+Names travel with the data when you build the problem from a
 [Tables.jl](https://tables.juliadata.org) table, such as a `DataFrame`;
 there is no `treatments` argument then. Which shape the table has is told by
-the column keywords, each a column name as a `Symbol` or a `String`.
+the column keywords, each a column name as a `Symbol` or a `String`. There is
+one constructor for both shapes.
 
 ```julia
+rule = FixedTrials(10_000)
+
 # wide: each column is a treatment, each row a block
-randomized_tukey_hsd(Xoshiro(1), df; trials=10_000)
+solve(RandomizedTukeyProblem(df), rule; rng=Xoshiro(1))
 # the same, leaving out a column that identifies the rows
-randomized_tukey_hsd(Xoshiro(1), df; trials=10_000, block=:dataset)
+solve(RandomizedTukeyProblem(df; block=:dataset), rule; rng=Xoshiro(1))
 
 # tidy: one row per block and treatment
-randomized_tukey_hsd(Xoshiro(1), df; trials=10_000,
-                     block=:dataset, treatment=:model, response=:accuracy)
+problem = RandomizedTukeyProblem(df; block=:dataset, treatment=:model,
+                                 response=:accuracy)
+solve(problem, rule; rng=Xoshiro(1))
 ```
 
 Wide names the treatments by the column names, as the table gives them
 (`Symbol`s). Tidy names them by the values of the `treatment` column, and
 takes blocks and treatments in the order they first appear. A missing
 response, or a block and treatment with no row, is rejected like a `NaN`. A
-real matrix still takes the matrix method above. The library does not
+real matrix takes the matrix constructor above. The library does not
 depend on DataFrames; any table works.
 
 ## Reading a CSV
@@ -157,11 +169,12 @@ A p-value from `trials` trials estimates the exact permutation p-value
 estimate without changing the data. `MonteCarloPValue` holds a p-value
 together with the number of trials it came from, and `hdi` and
 `probability_below` describe its Monte Carlo error. The result of
-`randomized_tukey_hsd` is unchanged; build the type from a result's
-`pvalue` and `trials`, or from the counts.
+`solve` is unchanged; build the type from a result's `pvalue` and
+`trials`, or from the counts.
 
 ```julia
-results = randomized_tukey_hsd(Xoshiro(1), responses; trials=10_000)
+problem = RandomizedTukeyProblem(responses)
+results = solve(problem, FixedTrials(10_000); rng=Xoshiro(1))
 p = MonteCarloPValue(results[2].pvalue, 10_000)
 
 pvalue(p)                         # the p-value, exceeding / trials
@@ -215,13 +228,14 @@ julia -t auto --project=examples examples/run.jl data.csv 100000
 
 The trials are cut into chunks of 64, whichever number of threads is used.
 Each chunk gets its own seed, drawn up front from the random number
-generator you pass first, as in `rand(rng, ...)` (the global one if left
-out), and its own buffers. So with a fixed `rng` state the p-values are
+generator you pass as the `rng` keyword (the global one if left out), and its
+own buffers. So with a fixed `rng` state the p-values are
 the same at any thread count:
 
 ```julia
 using Random
-randomized_tukey_hsd(Xoshiro(1), responses; trials=100_000)
+problem = RandomizedTukeyProblem(responses)
+solve(problem, FixedTrials(100_000); rng=Xoshiro(1))
 ```
 
 Seeding the global generator (`Random.seed!(1)`) and leaving `rng` out
@@ -259,7 +273,7 @@ is recorded in `test/reference.jl` (issue #17).
 
 ## How it is checked
 
-`] test` runs the suite, and CI runs it on Julia 1.9 and the latest
+`] test` runs the suite, and CI runs it on Julia 1.10 and the latest
 release at one and four threads. Besides unit tests, the library is
 compared with the exact p-values (every within-block arrangement
 enumerated) and with the output of Sakai's own implementation, Discpower,
