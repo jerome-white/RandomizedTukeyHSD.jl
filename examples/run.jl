@@ -7,8 +7,7 @@
 #
 # The input has one row per block and treatment, with the columns named
 # below (change them to match your file). For one row per block and one
-# column per treatment, drop the keywords: randomized_tukey_hsd(rng, df;
-# trials=trials).
+# column per treatment, drop the keywords: RandomizedTukeyProblem(df).
 
 using CSV, DataFrames, Random, RandomizedTukeyHSD
 
@@ -18,10 +17,10 @@ rng = length(ARGS) > 2 ? Xoshiro(parse(Int, ARGS[3])) : Random.default_rng()
 
 df = CSV.read(path, DataFrame)
 
-results = randomized_tukey_hsd(rng, df;
-                               trials=trials,
-                               block=:block,
-                               treatment=:treatment,
-                               response=:response)
+problem = RandomizedTukeyProblem(df;
+                                 block=:block,
+                                 treatment=:treatment,
+                                 response=:response)
+results = solve(problem, FixedTrials(trials); rng=rng)
 
 CSV.write(stdout, results)

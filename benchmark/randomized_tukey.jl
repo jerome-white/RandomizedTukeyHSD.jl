@@ -1,4 +1,4 @@
-# Benchmarks randomized_tukey_hsd over a grid of problem sizes and prints
+# Benchmarks solve over a grid of problem sizes and prints
 # a Markdown table. Run it from the repository root:
 #
 #   julia --project=benchmark -t 1 benchmark/randomized_tukey.jl
@@ -27,13 +27,14 @@ end
 
 function measure(ntreatments, nblocks, trials)
     rng = Xoshiro(ntreatments * 1_000_000 + nblocks)
-    responses = rand(rng, nblocks, ntreatments)
+    problem = RandomizedTukeyProblem(rand(rng, nblocks, ntreatments))
+    rule = FixedTrials(trials)
 
     # compile and warm up outside the measurement
-    randomized_tukey_hsd(responses; trials=10)
+    solve(problem, FixedTrials(10))
 
     return @benchmark(
-        randomized_tukey_hsd($responses; trials=$trials),
+        solve($problem, $rule),
         samples=10,
         seconds=60,
         evals=1
