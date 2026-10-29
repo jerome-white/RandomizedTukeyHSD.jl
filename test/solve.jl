@@ -108,6 +108,101 @@ end
     end
 end
 
+@testset "step!, trials and pvalues" begin
+    responses = [0.10 0.40 0.70; 0.20 0.50 0.60; 0.15 0.45 0.80;
+                 0.25 0.35 0.65]
+    problem = RandomizedTukeyProblem(responses; treatments=["A", "B", "C"])
+    rule = FixedTrials(300)    # 4 full chunks of 64 and one of 44
+
+    # counts of the whole run, in one go
+    whole = init(problem, rule; rng=Xoshiro(1))
+    solve!(whole)
+    counts = [ p.exceeding for p in pvalues(whole) ]
+
+    @testset "nothing is done at first" begin
+        run = init(problem, rule; rng=Xoshiro(1))
+        @test trials(run) == 0
+        @test_throws ArgumentError pvalues(run)
+        @test_throws r"no trials" pvalues(run)
+    end
+
+    @testset "step! advances by chunks" begin
+        run = init(problem, rule; rng=Xoshiro(1))
+        @test step!(run) === run
+        @test trials(run) == 64
+        step!(run, 2)
+        @test trials(run) == 192
+        step!(run, 2)
+        @test trials(run) == 300    # the last chunk is shorter
+    end
+
+    @testset "in pieces or at once, the counts are the same" begin
+        for pieces in ([5], [1, 4], [2, 3], [1, 1, 1, 1, 1], [4, 1])
+            run = init(problem, rule; rng=Xoshiro(1))
+            for n in pieces
+                step!(run, n)
+            end
+            @test [ p.exceeding for p in pvalues(run) ] == counts
+        end
+    end
+
+    @testset "solve! finishes what step! began" begin
+        run = init(problem, rule; rng=Xoshiro(1))
+        step!(run, 2)
+        @test solve!(run) == solve(problem, rule; rng=Xoshiro(1))
+        @test trials(run) == 300
+
+        # nothing is left, so asking again changes nothing
+        @test solve!(run) == solve(problem, rule; rng=Xoshiro(1))
+        @test trials(run) == 300
+    end
+
+    @testset "pvalues are MonteCarloPValues that keep their trials" begin
+        ps = pvalues(whole)
+        @test ps isa Vector{MonteCarloPValue}
+        @test length(ps) == 3
+        @test all(p -> p.trials == 300, ps)
+
+        results = solve(problem, rule; rng=Xoshiro(1))
+        @test [ pvalue(p) for p in ps ] == [ r.pvalue for r in results ]
+
+        # part way through, they carry the trials so far
+        run = init(problem, rule; rng=Xoshiro(1))
+        step!(run, 2)
+        @test all(p -> p.trials == 128, pvalues(run))
+    end
+
+    @testset "the seeds are drawn by init" begin
+        # one seed per chunk: 5 of them for 300 trials
+        rng = Xoshiro(1)
+        init(problem, rule; rng=rng)
+        reference = Xoshiro(1)
+        rand(reference, UInt64, 5)
+        @test rng == reference
+
+        # stepping does not touch the generator
+        rng = Xoshiro(1)
+        run = init(problem, rule; rng=rng)
+        state = copy(rng)
+        solve!(run)
+        @test rng == state
+    end
+
+    @testset "step! checks its argument" begin
+        run = init(problem, rule; rng=Xoshiro(1))
+        @test_throws ArgumentError step!(run, 0)
+        @test_throws r"nchunks must be positive, got -1" step!(run, -1)
+        @test_throws ArgumentError step!(run, 6)
+        @test_throws r"6 chunks asked for, but 5 left" step!(run, 6)
+
+        # a refused step leaves the run as it was
+        @test trials(run) == 0
+        step!(run, 4)
+        @test_throws r"2 chunks asked for, but 1 left" step!(run, 2)
+        @test trials(run) == 256
+    end
+end
+
 @testset "the CommonSolve verbs are re-exported" begin
     @test RandomizedTukeyHSD.init === CommonSolve.init
     @test RandomizedTukeyHSD.solve === CommonSolve.solve
