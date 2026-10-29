@@ -79,6 +79,25 @@ tuples is a [Tables.jl](https://tables.juliadata.org) table, so
 package depending on either. The docstrings (`?RandomizedTukeyProblem`,
 `?solve!`) list the errors it throws.
 
+### Stepping a run
+
+`solve` runs the whole rule. To look at a run on the way, make it with
+`init`, advance it with `step!` (in chunks of 64 trials, on all the
+threads), and read it with `trials` and `pvalues`:
+
+```julia
+run = init(problem, FixedTrials(10_000); rng=Xoshiro(1))
+step!(run, 10)    # ten chunks, 640 trials
+trials(run)       # 640
+pvalues(run)      # a MonteCarloPValue for each pair, out of 640 trials
+solve!(run)       # the rest, then the results, as for `solve`
+```
+
+The run keeps one count per pair, not the trials, so its memory does not
+grow with the number of trials, and however the chunks are cut into steps
+the counts are the same as with one `solve`. A step past the trials the rule
+plans throws an `ArgumentError`.
+
 ### Passing a table
 
 Names travel with the data when you build the problem from a

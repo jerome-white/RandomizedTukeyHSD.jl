@@ -53,6 +53,18 @@ Sakai's code have the header `treatment1,treatment2,difference,p`.
   `StatsAPI.pvalue`. The result of `solve` is unchanged.
   This adds the dependencies SpecialFunctions and StatsAPI (#55).
 
+### Added: a run that can be stepped (#57, #61)
+
+`init` now returns a run that holds the counts of the trials so far.
+`step!(run, nchunks=1)` advances it by chunks of 64 trials, `trials(run)`
+says how many trials are done, and `pvalues(run)` gives a
+`MonteCarloPValue` for each pair; `solve!` steps through what is left and
+reports as before. Only `FixedTrials` exists, so a step past its trials
+throws. The results are unchanged (the output of `benchmark/snapshot.jl` is
+byte-identical), and a run keeps one count per pair instead of the ranges of
+all the trials. Seeds are still drawn at `init` for all the chunks (#34
+changes that).
+
 ### Changed: the interface is CommonSolve's (#57, #58)
 
 `randomized_tukey_hsd` is removed. The test is now run with the verbs of

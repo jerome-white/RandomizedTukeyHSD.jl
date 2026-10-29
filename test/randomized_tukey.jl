@@ -91,7 +91,7 @@ end
     end
 
     @testset "chunk size" begin
-        run(chunk; trials=100) = RandomizedTukeyHSD._randomized_tukey_hsd(
+        run(chunk; trials=100) = tukey_chunked(
             Xoshiro(1), RESPONSES, trials, TREATMENTS, chunk
         )
 
