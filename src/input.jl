@@ -27,17 +27,26 @@ function tidy_matrix(blocks, treatments, responses)
     rows = Vector{Int}(undef, nrows)
     cols = Vector{Int}(undef, nrows)
 
-    for i in 1:nrows
-        rows[i] = get!(block_index, blocks[i], length(block_index) + 1)
+    # a new block or treatment gets the next number, one more than the
+    # largest so far, so a single lookup says whether it was seen before
+    nblocks = 0
+    ntreatments = 0
 
-        if !haskey(treatment_index, treatments[i])
-            push!(names, treatments[i])
+    for (i, (block, treatment)) in enumerate(zip(blocks, treatments))
+        row = get!(block_index, block, nblocks + 1)
+        nblocks = max(nblocks, row)
+
+        col = get!(treatment_index, treatment, ntreatments + 1)
+        if col > ntreatments
+            ntreatments = col
+            push!(names, treatment)
         end
-        cols[i] = get!(treatment_index, treatments[i],
-                       length(treatment_index) + 1)
+
+        rows[i] = row
+        cols[i] = col
     end
 
-    matrix = fill(NaN, length(block_index), length(treatment_index))
+    matrix = fill(NaN, nblocks, ntreatments)
     seen = falses(size(matrix))
 
     for i in 1:nrows
