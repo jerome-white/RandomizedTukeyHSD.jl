@@ -1,4 +1,4 @@
-# Checks randomized_tukey_hsd against references that do not share its code,
+# Checks solve against references that do not share its code,
 # on small problems where the full permutation distribution can be
 # enumerated:
 #
@@ -48,8 +48,8 @@ end
     exact = exact_pvalues(responses)
 
     Random.seed!(1)
-    results = randomized_tukey_hsd(responses; trials=TRIALS,
-                                   treatments=treatments)
+    results = tukey(responses; trials=TRIALS,
+                    treatments=treatments)
 
     @test length(results) == length(exact) == length(sakai)
 
@@ -105,8 +105,8 @@ end
 
     trials = 4 * TRIALS
     Random.seed!(1)
-    results = randomized_tukey_hsd(responses; trials=trials,
-                                   treatments=treatments)
+    results = tukey(responses; trials=trials,
+                    treatments=treatments)
 
     # what the library says it computes
     for (r, p) in zip(results, plain)

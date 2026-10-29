@@ -25,7 +25,8 @@ of `1 / trials`.
 # Example
 
 ```julia
-results = randomized_tukey_hsd(responses; trials=10_000)
+problem = RandomizedTukeyProblem(responses)
+results = solve(problem, FixedTrials(10_000))
 p = MonteCarloPValue(results[1].pvalue, 10_000)
 ```
 """

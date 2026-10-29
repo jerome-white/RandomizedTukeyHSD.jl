@@ -13,9 +13,10 @@ function main()
     for name in ("tiny", "ties", "distinct")
         (responses, treatments) = read_responses(joinpath(DATA, "$name.csv"))
 
+        problem = RandomizedTukeyProblem(responses; treatments=treatments)
+
         Random.seed!(42)
-        for r in randomized_tukey_hsd(responses; trials=5000,
-                                      treatments=treatments)
+        for r in solve(problem, FixedTrials(5000))
             println(name, " ", r.treatment1, " ", r.treatment2, " ",
                     repr(r.mean1), " ", repr(r.mean2), " ", repr(r.pvalue))
         end
@@ -23,9 +24,10 @@ function main()
 
     for (nblocks, ntreatments) in ((100, 8), (50, 20))
         responses = rand(Xoshiro(7), nblocks, ntreatments)
+        problem = RandomizedTukeyProblem(responses)
 
         Random.seed!(42)
-        for r in randomized_tukey_hsd(responses; trials=2000)
+        for r in solve(problem, FixedTrials(2000))
             println(nblocks, "x", ntreatments, " ", r.treatment1, " ",
                     r.treatment2, " ", repr(r.pvalue))
         end

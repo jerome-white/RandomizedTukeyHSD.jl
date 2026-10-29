@@ -21,39 +21,54 @@ function tidy_matrix(blocks, treatments, responses)
         throw(DimensionMismatch(msg))
     end
 
-    block_index = Dict{eltype(blocks),Int}()
-    treatment_index = Dict{eltype(treatments),Int}()
+    block_index = Dict{eltype(blocks), Int}()
+    treatment_index = Dict{eltype(treatments), Int}()
     names = eltype(treatments)[]
     rows = Vector{Int}(undef, nrows)
     cols = Vector{Int}(undef, nrows)
 
-    for i in 1:nrows
-        rows[i] = get!(block_index, blocks[i], length(block_index) + 1)
+    # a new key gets the next number, so a number past the count is new
+    nblocks = 0
+    ntreatments = 0
 
-        if !haskey(treatment_index, treatments[i])
-            push!(names, treatments[i])
+    for i in eachindex(blocks, treatments, responses)
+        block = blocks[i]
+        treatment = treatments[i]
+
+        row = get!(block_index, block, nblocks + 1)
+        if row > nblocks
+            nblocks = row
         end
-        cols[i] = get!(treatment_index, treatments[i],
-                       length(treatment_index) + 1)
+
+        col = get!(treatment_index, treatment, ntreatments + 1)
+        if col > ntreatments
+            ntreatments = col
+            push!(names, treatment)
+        end
+
+        rows[i] = row
+        cols[i] = col
     end
 
-    matrix = fill(NaN, length(block_index), length(treatment_index))
-    seen = falses(size(matrix))
+    matrix = fill(NaN, nblocks, ntreatments)
+    seen = falses(nblocks, ntreatments)
 
-    for i in 1:nrows
-        if seen[rows[i], cols[i]]
+    for i in eachindex(responses)
+        row, col = rows[i], cols[i]
+
+        if seen[row, col]
             msg = "more than one response for block $(repr(blocks[i])) " *
                   "and treatment $(repr(treatments[i]))"
             throw(ArgumentError(msg))
         end
 
-        seen[rows[i], cols[i]] = true
+        seen[row, col] = true
         if !ismissing(responses[i])
-            matrix[rows[i], cols[i]] = responses[i]
+            matrix[row, col] = responses[i]
         end
     end
 
-    return (matrix, names)
+    return matrix, names
 end
 
 """
@@ -100,8 +115,8 @@ end
 
 # Arrange a table into a blocks × treatments matrix and the treatment
 # names. `block`, `treatment` and `response` are column names or `nothing`;
-# the docstring of `randomized_tukey_hsd` for tables says what each
-# combination means.
+# the docstring of `RandomizedTukeyProblem` says what each combination
+# means.
 function _table_responses(table, block, treatment, response)
     if table isa AbstractMatrix
         msg = "a matrix must have real elements, got $(eltype(table)); " *
@@ -146,9 +161,11 @@ function _table_responses(table, block, treatment, response)
         throw(ArgumentError(msg))
     end
 
-    return tidy_matrix(Tables.getcolumn(columns, asked[:block]),
-                         Tables.getcolumn(columns, asked[:treatment]),
-                         Tables.getcolumn(columns, asked[:response]))
+    return tidy_matrix(
+        Tables.getcolumn(columns, asked[:block]),
+        Tables.getcolumn(columns, asked[:treatment]),
+        Tables.getcolumn(columns, asked[:response]),
+    )
 end
 
 # Every column but `skipped` is a treatment.

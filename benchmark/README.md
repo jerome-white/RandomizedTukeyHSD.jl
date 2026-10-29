@@ -1,6 +1,7 @@
 # Benchmarks
 
-`randomized_tukey_hsd` timed over a grid of problem sizes. This directory
+`solve` (called `randomized_tukey_hsd` until #58) timed over a grid of
+problem sizes. This directory
 holds the suite and the **baseline** measured before the performance work
 (#3-#6), so later changes can be compared against numbers rather than
 impressions.

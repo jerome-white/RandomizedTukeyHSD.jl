@@ -42,7 +42,7 @@ mass(lower, upper, a, b) = beta_inc(a, b, upper)[1] - beta_inc(a, b, lower)[1]
     @testset "the pvalue of a result" begin
         trials = 3000
         responses = [0.1 0.4 0.7; 0.2 0.5 0.6; 0.15 0.45 0.8]
-        results = randomized_tukey_hsd(Xoshiro(1), responses; trials=trials)
+        results = tukey(Xoshiro(1), responses; trials=trials)
         for r in results
             p = MonteCarloPValue(r.pvalue, trials)
             @test p.trials == trials
