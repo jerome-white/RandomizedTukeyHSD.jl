@@ -65,14 +65,12 @@ has advanced by the time `init` returns, whatever `step!` does later.
 function CommonSolve.init(problem::RandomizedTukeyProblem,
                           rule::FixedTrials;
                           rng::AbstractRNG=Random.default_rng())
-    return _init(problem, rule, rng, _CHUNK)
+    return _init(problem, rule, rng)
 end
 
 # `chunk` is the number of trials per task. The random stream depends on
 # it, so changing it changes the results for a fixed `rng` state.
-const _CHUNK = 64
-
-function _init(problem, rule::FixedTrials, rng, chunk)
+function _init(problem, rule::FixedTrials, rng, chunk=64)
     responses = problem.responses
     means = vec(mean(responses; dims=1))
     pairs = _pairs(length(means))
