@@ -95,13 +95,14 @@ end
             Xoshiro(1), RESPONSES, trials, TREATMENTS, chunk
         )
 
-        # the default is 64
-        @test run(64) == tukey(Xoshiro(1), RESPONSES; trials=100,
-                               treatments=TREATMENTS)
-
-        # it is part of the stream: the same size repeats, another differs
-        @test run(10) == run(10)
-        @test run(10; trials=5000) != run(64; trials=5000)
+        # the size only says how the trials are scheduled: every trial has
+        # its own stream, so every size gives the results of the default,
+        # from one trial per task to one task for all the trials and more
+        reference = tukey(Xoshiro(1), RESPONSES; trials=500,
+                          treatments=TREATMENTS)
+        for chunk in (1, 7, 50, 64, 100, 499, 500, 501)
+            @test run(chunk; trials=500) == reference
+        end
 
         # whatever the size, p-values are counts out of the number of trials
         for chunk in (1, 7, 100, 101)

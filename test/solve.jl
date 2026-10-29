@@ -172,12 +172,11 @@ end
         @test all(p -> p.trials == 128, pvalues(run))
     end
 
-    @testset "the seeds are drawn by init" begin
-        # one seed per chunk: 5 of them for 300 trials
+    @testset "one base seed is drawn by init" begin
         rng = Xoshiro(1)
         init(problem, rule; rng=rng)
         reference = Xoshiro(1)
-        rand(reference, UInt64, 5)
+        rand(reference, UInt64)
         @test rng == reference
 
         # stepping does not touch the generator

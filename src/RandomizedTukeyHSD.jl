@@ -31,16 +31,46 @@ function _pairs(n)
     return pairs
 end
 
-# Fill `ranges` with the range of the treatment means of that many trials.
-function _trials!(ranges, responses, seed)
-    (nblocks, ntreatments) = size(responses)
-    rng = Xoshiro(seed)
+# SplitMix64's output at `state`: the mixing the xoshiro authors recommend for
+# filling a generator's state from a seed.
+function _mix(state::UInt64)
+    z = (state ⊻ (state >> 30)) * 0xbf58476d1ce4e5b9
+    z = (z ⊻ (z >> 27)) * 0x94d049bb133111eb
 
-    data = Matrix{Float64}(undef, ntreatments, nblocks)
-    data .= transpose(responses)
+    return z ⊻ (z >> 31)
+end
+
+# The random stream of trial `i`: the four words of a generator's state are
+# consecutive outputs of a SplitMix64 sequence that starts at `base`. Each
+# trial takes its own four, so the streams of different trials do not overlap
+# and depend on `base` and `i` alone, not on how trials are cut into chunks.
+function _stream(base::UInt64, i)
+    gamma = 0x9e3779b97f4a7c15
+    state = base + UInt64(4 * (i - 1)) * gamma
+
+    return Xoshiro(
+        _mix(state + gamma),
+        _mix(state + 2 * gamma),
+        _mix(state + 3 * gamma),
+        _mix(state + 4 * gamma),
+    )
+end
+
+# Fill `ranges` with the range of the treatment means of that many trials,
+# which are trials `first`, `first + 1`, ... of the run. Every trial shuffles
+# the responses as observed, not the arrangement the trial before left, so
+# that a trial depends on its own stream alone.
+function _trials!(ranges, responses, base, first)
+    (nblocks, ntreatments) = size(responses)
+
+    observed = Matrix{Float64}(undef, ntreatments, nblocks)
+    observed .= transpose(responses)
+    data = similar(observed)
     sums = Matrix{Float64}(undef, ntreatments, 1)
 
     for i in eachindex(ranges)
+        rng = _stream(base, first + i - 1)
+        copyto!(data, observed)
         for col in eachcol(data)
             shuffle!(rng, col)
         end
