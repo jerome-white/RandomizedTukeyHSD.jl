@@ -75,7 +75,7 @@ end
     exact = exact_pvalues(responses)
     trials = 50_000
 
-    results = RandomizedTukeyHSD._randomized_tukey_hsd(
+    results = tukey_chunked(
         Xoshiro(chunk), responses, trials, treatments, chunk
     )
 

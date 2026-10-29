@@ -63,9 +63,7 @@ end
     rule = FixedTrials(300)
 
     # what the computation gives for the same generator state
-    expected = RandomizedTukeyHSD._randomized_tukey_hsd(
-        Xoshiro(1), responses, 300, treatments
-    )
+    expected = tukey_chunked(Xoshiro(1), responses, 300, treatments, 64)
 
     @testset "solve is solve!(init(...))" begin
         @test solve(problem, rule; rng=Xoshiro(1)) == expected

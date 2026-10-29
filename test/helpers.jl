@@ -18,6 +18,15 @@ function tukey(input; kwargs...)
     return tukey(Random.default_rng(), input; kwargs...)
 end
 
+# Solves with `chunk` trials per task, which the public interface does not
+# offer: the chunk size is part of the random stream.
+function tukey_chunked(rng, responses, trials, treatments, chunk)
+    problem = RandomizedTukeyProblem(responses; treatments=treatments)
+    run = RandomizedTukeyHSD._init(problem, FixedTrials(trials), rng, chunk)
+
+    return solve!(run)
+end
+
 # Reads a tidy CSV (block,treatment,response) into a blocks x treatments
 # matrix, with blocks and treatments in order of first appearance.
 function read_responses(path)
