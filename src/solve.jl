@@ -85,8 +85,19 @@ function _init(problem, rule::FixedTrials, rng, chunk)
     seeds = rand(rng, UInt64, cld(rule.trials, chunk))
     exceeding = zeros(Int, length(pairs))
 
-    return RandomizedTukeyRun(problem, rule, rng, chunk, seeds, pairs, means,
-                              observed, exceeding, 0, 0)
+    return RandomizedTukeyRun(
+        problem,
+        rule,
+        rng,
+        chunk,
+        seeds,
+        pairs,
+        means,
+        observed,
+        exceeding,
+        0,
+        0,
+    )
 end
 
 """
