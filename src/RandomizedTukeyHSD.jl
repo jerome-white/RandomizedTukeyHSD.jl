@@ -31,8 +31,16 @@ function _pairs(n)
     return pairs
 end
 
-# SplitMix64's output at `state`: the mixing the xoshiro authors recommend for
-# filling a generator's state from a seed.
+# The output function of SplitMix64: the state is a counter, and this scrambles
+# it so that neighbouring counters give unrelated values. Every step is
+# invertible, so different states give different outputs. The shifts and the
+# two multipliers are those of Sebastiano Vigna's public-domain splitmix64.c
+# (https://prng.di.unimi.it/splitmix64.c), a fixed-increment version of Java 8's
+# SplittableRandom (Steele, Lea and Flood, "Fast splittable pseudorandom number
+# generators", OOPSLA 2014, doi 10.1145/2714064.2660195). The multipliers were
+# found by search; they have no closed form. The xoshiro authors suggest
+# SplitMix to fill the state of one of their generators from a seed
+# (https://prng.di.unimi.it/).
 function _mix(state::UInt64)
     z = (state ⊻ (state >> 30)) * 0xbf58476d1ce4e5b9
     z = (z ⊻ (z >> 27)) * 0x94d049bb133111eb
@@ -44,7 +52,10 @@ end
 # consecutive outputs of a SplitMix64 sequence that starts at `base`. Each
 # trial takes its own four, so the streams of different trials do not overlap
 # and depend on `base` and `i` alone, not on how trials are cut into chunks.
+# The segments of four per trial are this package's arrangement, not Vigna's.
 function _stream(base::UInt64, i)
+    # the counter's increment, floor(2^64 / golden ratio): it is odd, so the
+    # counter visits every 64-bit value before it repeats
     gamma = 0x9e3779b97f4a7c15
     state = base + UInt64(4 * (i - 1)) * gamma
 
