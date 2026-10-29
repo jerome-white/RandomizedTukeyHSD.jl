@@ -28,7 +28,7 @@ A [`RandomizedTukeyProblem`](@ref) together with the rule and the random
 number generator it is to be solved with, as returned by `init`. Pass it to
 `solve!` to run it.
 """
-struct RandomizedTukeyRun{P<:RandomizedTukeyProblem,L,G<:AbstractRNG}
+struct RandomizedTukeyRun{P<:RandomizedTukeyProblem, L, G<:AbstractRNG}
     problem::P
     rule::L
     rng::G
@@ -75,9 +75,13 @@ results = solve(problem, FixedTrials(10_000); rng=Xoshiro(1))
 results[2].pvalue   # A against C
 ```
 """
-function CommonSolve.solve!(run::RandomizedTukeyRun{P,FixedTrials}) where P
+function CommonSolve.solve!(run::RandomizedTukeyRun{P, FixedTrials}) where P
     problem = run.problem
 
-    return _randomized_tukey_hsd(run.rng, problem.responses,
-                                 run.rule.trials, problem.treatments)
+    return _randomized_tukey_hsd(
+        run.rng,
+        problem.responses,
+        run.rule.trials,
+        problem.treatments,
+    )
 end

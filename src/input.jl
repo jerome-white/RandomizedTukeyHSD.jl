@@ -21,8 +21,8 @@ function tidy_matrix(blocks, treatments, responses)
         throw(DimensionMismatch(msg))
     end
 
-    block_index = Dict{eltype(blocks),Int}()
-    treatment_index = Dict{eltype(treatments),Int}()
+    block_index = Dict{eltype(blocks), Int}()
+    treatment_index = Dict{eltype(treatments), Int}()
     names = eltype(treatments)[]
     rows = Vector{Int}(undef, nrows)
     cols = Vector{Int}(undef, nrows)
@@ -146,9 +146,11 @@ function _table_responses(table, block, treatment, response)
         throw(ArgumentError(msg))
     end
 
-    return tidy_matrix(Tables.getcolumn(columns, asked[:block]),
-                         Tables.getcolumn(columns, asked[:treatment]),
-                         Tables.getcolumn(columns, asked[:response]))
+    return tidy_matrix(
+        Tables.getcolumn(columns, asked[:block]),
+        Tables.getcolumn(columns, asked[:treatment]),
+        Tables.getcolumn(columns, asked[:response]),
+    )
 end
 
 # Every column but `skipped` is a treatment.

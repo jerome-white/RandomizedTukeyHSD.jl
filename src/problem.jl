@@ -49,7 +49,7 @@ problem = RandomizedTukeyProblem(table; block=:block, treatment=:treatment,
                                  response=:response)
 ```
 """
-struct RandomizedTukeyProblem{R<:AbstractMatrix{<:Real},T<:AbstractVector}
+struct RandomizedTukeyProblem{R<:AbstractMatrix{<:Real}, T<:AbstractVector}
     responses::R
     treatments::T
 
@@ -71,8 +71,10 @@ struct RandomizedTukeyProblem{R<:AbstractMatrix{<:Real},T<:AbstractVector}
             throw(ArgumentError("responses contain $nans NaN values"))
         end
 
-        return new{typeof(responses),typeof(treatments)}(responses,
-                                                          treatments)
+        return new{typeof(responses), typeof(treatments)}(
+            responses,
+            treatments,
+        )
     end
 end
 
@@ -85,8 +87,12 @@ function RandomizedTukeyProblem(table;
                                 block=nothing,
                                 treatment=nothing,
                                 response=nothing)
-    (responses, treatments) = _table_responses(table, block, treatment,
-                                               response)
+    (responses, treatments) = _table_responses(
+        table,
+        block,
+        treatment,
+        response,
+    )
 
     return RandomizedTukeyProblem(responses; treatments=treatments)
 end
