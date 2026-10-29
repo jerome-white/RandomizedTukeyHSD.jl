@@ -27,14 +27,18 @@ function tidy_matrix(blocks, treatments, responses)
     rows = Vector{Int}(undef, nrows)
     cols = Vector{Int}(undef, nrows)
 
-    # a new block or treatment gets the next number, one more than the
-    # largest so far, so a single lookup says whether it was seen before
+    # a new key gets the next number, so a number past the count is new
     nblocks = 0
     ntreatments = 0
 
-    for (i, (block, treatment)) in enumerate(zip(blocks, treatments))
+    for i in eachindex(blocks, treatments, responses)
+        block = blocks[i]
+        treatment = treatments[i]
+
         row = get!(block_index, block, nblocks + 1)
-        nblocks = max(nblocks, row)
+        if row > nblocks
+            nblocks = row
+        end
 
         col = get!(treatment_index, treatment, ntreatments + 1)
         if col > ntreatments
@@ -47,22 +51,24 @@ function tidy_matrix(blocks, treatments, responses)
     end
 
     matrix = fill(NaN, nblocks, ntreatments)
-    seen = falses(size(matrix))
+    seen = falses(nblocks, ntreatments)
 
-    for i in 1:nrows
-        if seen[rows[i], cols[i]]
+    for i in eachindex(responses)
+        row, col = rows[i], cols[i]
+
+        if seen[row, col]
             msg = "more than one response for block $(repr(blocks[i])) " *
                   "and treatment $(repr(treatments[i]))"
             throw(ArgumentError(msg))
         end
 
-        seen[rows[i], cols[i]] = true
+        seen[row, col] = true
         if !ismissing(responses[i])
-            matrix[rows[i], cols[i]] = responses[i]
+            matrix[row, col] = responses[i]
         end
     end
 
-    return (matrix, names)
+    return matrix, names
 end
 
 """
