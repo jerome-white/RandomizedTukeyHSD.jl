@@ -16,6 +16,15 @@ function pvalues_with(threads)
     println(join([ p.exceeding for p in pvalues(run) ], ","))
     step!(run, 5)
     println(join([ p.exceeding for p in pvalues(run) ], ","))
+    struct Collect
+        seen::Vector{Any}
+    end
+    RandomizedTukeyHSD.emit(m::Collect, c) = push!(m.seen, c)
+    monitor = Collect(Any[])
+    solve(problem, FixedTrials(1000); rng=Xoshiro(11), monitor=monitor,
+          every=200)
+    println(join([ join([ p.exceeding for p in c.pvalues ], ",")
+                   for c in monitor.seen ], ";"))
     """
     julia = Base.julia_cmd()
     project = dirname(Base.active_project())

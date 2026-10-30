@@ -98,6 +98,54 @@ grow with the number of trials, and however the chunks are cut into steps
 the counts are the same as with one `solve`. A step past the trials the rule
 plans throws an `ArgumentError`.
 
+### Watching a run
+
+A *monitor* is shown the p-values so far at regular checkpoints, so you can
+watch the Monte Carlo settle. It only looks: it gets a copy, not the run, so
+it cannot change the p-values or stop the run (stopping is a rule decided
+beforehand, not something to do when an estimate looks good, which biases the
+decision). The default monitor does nothing.
+
+```julia
+using Logging
+with_logger(ConsoleLogger(stderr, LogLevel(-1))) do
+    solve(problem, FixedTrials(100_000); monitor=LogMonitor(), every=10_000)
+end
+```
+
+`LogMonitor` emits a Logging record at every checkpoint, at level
+`LogLevel(-1)`, which the default logger does not show; the call above
+lowers the level to print them. Loggers that draw progress bars
+(TerminalLoggers, the VS Code and Pluto interfaces) show the `progress` key of
+the records as a bar. A record carries `trials`, `planned`, the `pvalues` (a
+`MonteCarloPValue` per pair, for which `hdi` and `probability_below` give the
+uncertainty) and `progress`. `every` is the number of trials between
+checkpoints, rounded up to whole chunks of 64, and defaults to 1% of the
+trials.
+
+To send the numbers somewhere else, write a monitor: a type with a method of
+`emit`, called at every checkpoint with a `Checkpoint` (`trials`, `planned`,
+`pvalues`, `done`).
+
+```julia
+struct Trace
+    trials::Vector{Int}
+    smallest::Vector{Float64}
+end
+Trace() = Trace(Int[], Float64[])
+
+function RandomizedTukeyHSD.emit(trace::Trace, checkpoint)
+    push!(trace.trials, checkpoint.trials)
+    push!(trace.smallest, minimum(pvalue.(checkpoint.pvalues)))
+end
+
+trace = Trace()
+solve(problem, FixedTrials(100_000); monitor=trace)
+```
+
+Monitors are called from the main task between steps, so they need not be
+thread-safe, and the results are the same with or without one.
+
 ### Passing a table
 
 Names travel with the data when you build the problem from a
