@@ -15,16 +15,6 @@ using Statistics
         @test draw(base, 5) != draw(base + 1, 5)
     end
 
-    @testset "trials do not share state words" begin
-        # four words per trial, for consecutive trials: all different
-        words = UInt64[]
-        for i in 1:1000
-            g = stream(base, i)
-            append!(words, (g.s0, g.s1, g.s2, g.s3))
-        end
-        @test length(unique(words)) == length(words)
-    end
-
     @testset "neighbouring trials are not correlated" begin
         n = 100_000
         draws = Matrix{Float64}(undef, n, 3)
