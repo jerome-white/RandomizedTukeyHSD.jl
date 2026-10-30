@@ -10,12 +10,14 @@ using StatsAPI: pvalue
 export RandomizedTukeyProblem, FixedTrials
 export init, solve, solve!, step!
 export trials, pvalues
+export emit, Checkpoint, NoMonitor, LogMonitor
 export MonteCarloPValue, pvalue, hdi, probability_below
 
 include("input.jl")
 include("problem.jl")
-include("solve.jl")
 include("pvalue.jl")
+include("monitor.jl")
+include("solve.jl")
 
 # All pairs (j, k) with j < k, in the order (1,2), (1,3), ..., (n-1,n).
 function _pairs(n)

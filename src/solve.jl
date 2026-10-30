@@ -39,12 +39,16 @@ from the generator when the run is made and on the number of the trial. So
 the trials do not depend on how they are cut into chunks, which only says how
 `step!` schedules them, nor on the number of threads.
 """
-mutable struct RandomizedTukeyRun{P<:RandomizedTukeyProblem, L, G<:AbstractRNG}
+mutable struct RandomizedTukeyRun{
+    P<:RandomizedTukeyProblem, L, G<:AbstractRNG, M
+}
     problem::P
     rule::L
     rng::G
     chunk::Int
     base::UInt64
+    monitor::M
+    interval::Int
     pairs::Vector{Tuple{Int, Int}}
     means::Vector{Float64}
     observed::Vector{Float64}
@@ -54,7 +58,8 @@ mutable struct RandomizedTukeyRun{P<:RandomizedTukeyProblem, L, G<:AbstractRNG}
 end
 
 """
-    init(problem::RandomizedTukeyProblem, rule; rng=Random.default_rng())
+    init(problem::RandomizedTukeyProblem, rule;
+         rng=Random.default_rng(), monitor=NoMonitor(), every=nothing)
 
 Prepare to solve `problem` with `rule` (for now [`FixedTrials`](@ref)),
 drawing the trials from `rng`. Returns a [`RandomizedTukeyRun`](@ref) with no
@@ -62,16 +67,45 @@ trials done, for `step!` or `solve!`.
 
 One base seed is drawn from `rng` here and nothing is drawn later, so `rng`
 has advanced by the time `init` returns, whatever `step!` does.
+
+`monitor` is shown a [`Checkpoint`](@ref) by `solve!` every `every` trials
+(rounded up to whole chunks of 64) and at the end; see [`emit`](@ref) for what
+a monitor is. Without `every`, the checkpoints are about 1% of the rule's
+trials apart. With the default [`NoMonitor`](@ref) there is no checkpoint
+but the last, and `solve!` runs all its trials in one go. The monitor and
+`every` change nothing in the results.
+
+Throws an `ArgumentError` if `every` is not positive.
 """
 function CommonSolve.init(problem::RandomizedTukeyProblem,
                           rule::FixedTrials;
-                          rng::AbstractRNG=Random.default_rng())
-    return _init(problem, rule, rng)
+                          rng::AbstractRNG=Random.default_rng(),
+                          monitor=NoMonitor(),
+                          every::Union{Nothing, Integer}=nothing)
+    return _init(problem, rule, rng; monitor=monitor, every=every)
+end
+
+# The trials between checkpoints when `every` is not given: all of them for
+# no monitor, which needs none, and about 1% of the rule's for any other.
+function _default_every(::NoMonitor, rule)
+    return rule.trials
+end
+
+function _default_every(monitor, rule)
+    return cld(rule.trials, 100)
 end
 
 # `chunk` is the number of trials per task. It only schedules the work: the
 # results do not depend on it.
-function _init(problem, rule::FixedTrials, rng, chunk=64)
+function _init(problem, rule::FixedTrials, rng, chunk=64;
+               monitor=NoMonitor(), every=nothing)
+    if every !== nothing && every <= 0
+        throw(ArgumentError("every must be positive, got $every"))
+    end
+    if every === nothing
+        every = _default_every(monitor, rule)
+    end
+
     responses = problem.responses
     means = vec(mean(responses; dims=1))
     pairs = _pairs(length(means))
@@ -90,6 +124,8 @@ function _init(problem, rule::FixedTrials, rng, chunk=64)
         rng,
         chunk,
         base,
+        monitor,
+        cld(every, chunk),
         pairs,
         means,
         observed,
@@ -234,12 +270,26 @@ results[2].pvalue   # A against C
 ```
 """
 function CommonSolve.solve!(run::RandomizedTukeyRun{P, FixedTrials}) where P
-    left = _planned(run) - run.chunks
-    if left > 0
-        step!(run, left)
+    while run.chunks < _planned(run)
+        left = _planned(run) - run.chunks
+        step!(run, min(run.interval, left))
+        _notify(run.monitor, run)
     end
 
     return _results(run)
+end
+
+# Show the monitor the state of the run: a copy, never the run.
+function _notify(monitor, run)
+    done = run.chunks == _planned(run)
+    checkpoint = Checkpoint(run.trials, run.rule.trials, pvalues(run), done)
+    emit(monitor, checkpoint)
+
+    return nothing
+end
+
+function _notify(::NoMonitor, run)
+    return nothing
 end
 
 # The named tuples of `solve!`, from the counts so far.
