@@ -67,8 +67,10 @@ is the one value `init` draws from `rng`. The consequences:
   The README's caveat about it is gone.
 - The memory for seeds is one number instead of one per 64 trials, and a
   run needs no planned total, which later rules need.
-- Cost: every trial starts from the observed arrangement again and makes a
-  generator, a few percent on small problems (see #34).
+- Cost: every trial starts from the observed arrangement again and seeds
+  a generator, which is a hash. The smallest problems take about twice as
+  long (20 blocks × 3 treatments), 50 blocks × 100 treatments about 6 %
+  longer, and the larger the problem the less it shows (see #34, #64).
 
 ### Added: a run that can be stepped (#57, #61)
 
