@@ -53,6 +53,25 @@ Sakai's code have the header `treatment1,treatment2,difference,p`.
   `StatsAPI.pvalue`. The result of `solve` is unchanged.
   This adds the dependencies SpecialFunctions and StatsAPI (#55).
 
+### Changed: a random stream for every trial (#34, #57)
+
+Each trial's random stream is now derived from a base seed and the number
+of the trial, rather than one stream per chunk of 64 trials. The base seed
+is the one value `init` draws from `rng`. The consequences:
+
+- **The p-values for a fixed generator state changed, once.** They are as
+  valid as before (the exact-enumeration and Sakai reference tests pass) but
+  are different draws, so a recorded fixed-seed result is not reproduced by
+  this version.
+- The chunk size no longer affects the results; it only schedules the work.
+  The README's caveat about it is gone.
+- The memory for seeds is one number instead of one per 64 trials, and a
+  run needs no planned total, which later rules need.
+- Cost: every trial starts from the observed arrangement again and seeds
+  a generator, which is a hash. The smallest problems take about twice as
+  long (20 blocks × 3 treatments), 50 blocks × 100 treatments about 6 %
+  longer, and the larger the problem the less it shows (see #34, #64).
+
 ### Added: a run that can be stepped (#57, #61)
 
 `init` now returns a run that holds the counts of the trials so far.
@@ -63,7 +82,7 @@ reports as before. Only `FixedTrials` exists, so a step past its trials
 throws. The results are unchanged (the output of `benchmark/snapshot.jl` is
 byte-identical), and a run keeps one count per pair instead of the ranges of
 all the trials. Seeds are still drawn at `init` for all the chunks (#34
-changes that).
+changed that, above).
 
 ### Changed: the interface is CommonSolve's (#57, #58)
 

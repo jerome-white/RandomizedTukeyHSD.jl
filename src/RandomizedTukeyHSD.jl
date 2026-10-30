@@ -31,16 +31,29 @@ function _pairs(n)
     return pairs
 end
 
-# Fill `ranges` with the range of the treatment means of that many trials.
-function _trials!(ranges, responses, seed)
-    (nblocks, ntreatments) = size(responses)
-    rng = Xoshiro(seed)
+# The random stream of trial `i`: a generator seeded with `base + i`. Seeding
+# goes through a cryptographic hash (see `?Random.seed!`), so neighbouring
+# seeds give unrelated streams, and a stream depends on `base` and `i` alone,
+# not on how trials are cut into chunks.
+function _stream(base::UInt64, i)
+    return Xoshiro(base + UInt64(i))
+end
 
-    data = Matrix{Float64}(undef, ntreatments, nblocks)
-    data .= transpose(responses)
+# Fill `ranges` with the range of the treatment means of that many trials,
+# which are trials `first`, `first + 1`, ... of the run. Every trial shuffles
+# the responses as observed, not the arrangement the trial before left, so
+# that a trial depends on its own stream alone.
+function _trials!(ranges, responses, base, first)
+    (nblocks, ntreatments) = size(responses)
+
+    observed = Matrix{Float64}(undef, ntreatments, nblocks)
+    observed .= transpose(responses)
+    data = similar(observed)
     sums = Matrix{Float64}(undef, ntreatments, 1)
 
     for i in eachindex(ranges)
+        rng = _stream(base, first + i - 1)
+        copyto!(data, observed)
         for col in eachcol(data)
             shuffle!(rng, col)
         end

@@ -34,16 +34,17 @@ observed absolute difference in means. [`trials`](@ref) says how many
 trials that is out of, and [`pvalues`](@ref) turns the counts into
 [`MonteCarloPValue`](@ref)s.
 
-The trials are cut into chunks, and every chunk has its own random stream,
-whose seed is drawn from the generator when the run is made. For now the
-chunks are all planned by the rule, so the generator is not used again.
+Every trial has its own random stream, which depends on a base seed drawn
+from the generator when the run is made and on the number of the trial. So
+the trials do not depend on how they are cut into chunks, which only says how
+`step!` schedules them, nor on the number of threads.
 """
 mutable struct RandomizedTukeyRun{P<:RandomizedTukeyProblem, L, G<:AbstractRNG}
     problem::P
     rule::L
     rng::G
     chunk::Int
-    seeds::Vector{UInt64}
+    base::UInt64
     pairs::Vector{Tuple{Int, Int}}
     means::Vector{Float64}
     observed::Vector{Float64}
@@ -59,8 +60,8 @@ Prepare to solve `problem` with `rule` (for now [`FixedTrials`](@ref)),
 drawing the trials from `rng`. Returns a [`RandomizedTukeyRun`](@ref) with no
 trials done, for `step!` or `solve!`.
 
-The seeds of all the chunks the rule plans are drawn from `rng` here, so `rng`
-has advanced by the time `init` returns, whatever `step!` does later.
+One base seed is drawn from `rng` here and nothing is drawn later, so `rng`
+has advanced by the time `init` returns, whatever `step!` does.
 """
 function CommonSolve.init(problem::RandomizedTukeyProblem,
                           rule::FixedTrials;
@@ -68,8 +69,8 @@ function CommonSolve.init(problem::RandomizedTukeyProblem,
     return _init(problem, rule, rng)
 end
 
-# `chunk` is the number of trials per task. The random stream depends on
-# it, so changing it changes the results for a fixed `rng` state.
+# `chunk` is the number of trials per task. It only schedules the work: the
+# results do not depend on it.
 function _init(problem, rule::FixedTrials, rng, chunk=64)
     responses = problem.responses
     means = vec(mean(responses; dims=1))
@@ -80,7 +81,7 @@ function _init(problem, rule::FixedTrials, rng, chunk=64)
         observed[p] = abs(means[j] - means[k])
     end
 
-    seeds = rand(rng, UInt64, cld(rule.trials, chunk))
+    base = rand(rng, UInt64)
     exceeding = zeros(Int, length(pairs))
 
     return RandomizedTukeyRun(
@@ -88,7 +89,7 @@ function _init(problem, rule::FixedTrials, rng, chunk=64)
         rule,
         rng,
         chunk,
-        seeds,
+        base,
         pairs,
         means,
         observed,
@@ -130,6 +131,11 @@ function pvalues(run::RandomizedTukeyRun)
     return result
 end
 
+# Number of chunks the rule plans.
+function _planned(run)
+    return cld(run.rule.trials, run.chunk)
+end
+
 # Number of trials of chunk `c`: all of them are `run.chunk` but the last.
 function _chunk_trials(run, c)
     planned = run.rule.trials
@@ -143,7 +149,8 @@ end
 # trials whose range reached the pair's observed difference.
 function _count_chunk!(exceeding, run, c, lck)
     ranges = Vector{Float64}(undef, _chunk_trials(run, c))
-    _trials!(ranges, run.problem.responses, run.seeds[c])
+    first = (c - 1) * run.chunk + 1
+    _trials!(ranges, run.problem.responses, run.base, first)
     sort!(ranges)
 
     counts = Vector{Int}(undef, length(run.observed))
@@ -174,7 +181,7 @@ function CommonSolve.step!(run::RandomizedTukeyRun, nchunks::Integer=1)
     if nchunks <= 0
         throw(ArgumentError("nchunks must be positive, got $nchunks"))
     end
-    left = length(run.seeds) - run.chunks
+    left = _planned(run) - run.chunks
     if nchunks > left
         msg = "$nchunks chunks asked for, but $left left"
         throw(ArgumentError(msg))
@@ -227,7 +234,7 @@ results[2].pvalue   # A against C
 ```
 """
 function CommonSolve.solve!(run::RandomizedTukeyRun{P, FixedTrials}) where P
-    left = length(run.seeds) - run.chunks
+    left = _planned(run) - run.chunks
     if left > 0
         step!(run, left)
     end
