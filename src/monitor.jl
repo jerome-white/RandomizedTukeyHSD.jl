@@ -97,12 +97,15 @@ function emit(monitor::LogMonitor, checkpoint::Checkpoint)
         progress = checkpoint.trials / checkpoint.planned
     end
 
-    @logmsg(LogLevel(-1), "Randomized Tukey HSD",
-            trials=checkpoint.trials,
-            planned=checkpoint.planned,
-            pvalues=checkpoint.pvalues,
-            progress=progress,
-            _id=monitor.id)
+    @logmsg(
+        LogLevel(-1),
+        "Randomized Tukey HSD",
+        trials=checkpoint.trials,
+        planned=checkpoint.planned,
+        pvalues=checkpoint.pvalues,
+        progress=progress,
+        _id=monitor.id,
+    )
 
     return nothing
 end
