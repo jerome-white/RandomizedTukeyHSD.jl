@@ -53,6 +53,19 @@ Sakai's code have the header `treatment1,treatment2,difference,p`.
   `StatsAPI.pvalue`. The result of `solve` is unchanged.
   This adds the dependencies SpecialFunctions and StatsAPI (#55).
 
+### Added: monitors (#54, #57)
+
+`init` and `solve` take `monitor=` and `every=`. A monitor is a type with a
+method of `emit(monitor, checkpoint)`, called by `solve!` at every checkpoint
+(every `every` trials, rounded up to chunks, and at the end) with a
+`Checkpoint(trials, planned, pvalues, done)`. The checkpoint holds a copy
+of the p-values, never the run, so a monitor can only observe: it cannot
+change the results, which are the same with or without it, and stopping is
+not offered (see #44). `NoMonitor()` is the default and with it `solve!` still
+runs all its trials in one go. `LogMonitor()` emits a Logging record at
+`LogLevel(-1)`, below `Info`, with the `progress` key progress bars read. Adds
+the standard library Logging as a dependency.
+
 ### Changed: a random stream for every trial (#34, #57)
 
 Each trial's random stream is now derived from a base seed and the number
