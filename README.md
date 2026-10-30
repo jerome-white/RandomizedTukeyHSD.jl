@@ -285,6 +285,35 @@ MonteCarloPValue(49, 1000)        # from the counts: 49 of 1000 trials
   `using HypothesisTests`. `hdi` is not `confint`, which is a
   confidence interval.
 
+### Choosing the number of trials from a precision
+
+`trials_for` turns a precision target into a number of trials, for
+`FixedTrials`. It is decided before the run, from the precision wanted, so it
+does not depend on the results.
+
+```julia
+trials_for(StandardError(0.001))              # 250000
+trials_for(StandardError(0.001); p=0.05)      # 47500
+trials_for(HDIWidth(0.002); p=0.05)           # 182473
+trials_for(HDIWidth(0.002; level=0.9, prior=(0.5, 0.5)); p=0.05)
+
+solve(problem, FixedTrials(trials_for(HDIWidth(0.002); p=0.05)))
+```
+
+- `StandardError(se)`: the standard error of a p-value is at most `se`. It
+  is `sqrt(p * (1 - p) / trials)`, the standard deviation of a binomial
+  proportion, which holds without assuming a normal distribution.
+- `HDIWidth(width; level=0.95, prior=(1, 1))`: the `hdi` of a p-value is at
+  most `width` wide, for the same `level` and `prior` as `hdi`. It assumes
+  the count that `p` implies. For many trials it agrees with `StandardError`
+  at `width / 3.92` (95% level); they differ in what they say.
+- The precision depends on the exact p-value, which is not known before the
+  run. `p=0.5` (the default) is the worst case and meets the target for
+  every pair; a `p` near the level you will judge pairs at, like 0.05,
+  needs fewer trials, and meets the target for p-values near it.
+- A pilot run can suggest `p`, but its trials are not part of the final run.
+- A new kind of target is a type with a method `trials_for(target, p)`.
+
 ## Threads and reproducibility
 
 Start Julia with more threads to use them (`-t N`, or `-t auto`):
