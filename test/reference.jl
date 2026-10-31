@@ -58,8 +58,8 @@ end
         (sakai_difference, sakai_pvalue) = sakai[pair]
 
         @testset "$(join(pair, " vs "))" begin
-            @test abs(r.difference) ≈ sakai_difference atol=PRINTED
-            @test sakai_pvalue ≈ p atol=PRINTED
+            @test isapprox(abs(r.difference), sakai_difference; atol=PRINTED)
+            @test isapprox(sakai_pvalue, p; atol=PRINTED)
             @test abs(r.pvalue - sakai_pvalue) <= tolerance(p, TRIALS)
             @test abs(r.pvalue - p) <= tolerance(p, TRIALS)
         end
@@ -98,10 +98,10 @@ end
     exact = exact_pvalues(responses)
     plain = exact_pvalues(responses; tol=0.0)
 
-    @test sakai[("A", "B")][2] ≈ exact[1] atol=PRINTED
-    @test exact[1] ≈ 0.40277777777777777
-    @test plain[1] ≈ 0.39351851851851855
-    @test plain[2:end] ≈ exact[2:end]
+    @test isapprox(sakai[("A", "B")][2], exact[1]; atol=PRINTED)
+    @test isapprox(exact[1], 0.40277777777777777)
+    @test isapprox(plain[1], 0.39351851851851855)
+    @test isapprox(plain[2:end], exact[2:end])
 
     trials = 4 * TRIALS
     Random.seed!(1)

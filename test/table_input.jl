@@ -1,6 +1,6 @@
 using DataFrames
 
-# the tables hold the same responses as RESPONSES (4 blocks × 3 treatments)
+# the tables hold the same responses as RESPONSES (4 blocks x 3 treatments)
 # so every form can be compared with the matrix method for the same
 # generator state
 const BLOCKS = [ "b$i" for i in 1:4 ]
@@ -61,7 +61,7 @@ end
         got = Dict(key(x) => abs(x.difference) for x in r)
         want = Dict(key(x) => abs(x.difference) for x in expected)
         @test keys(got) == keys(want)
-        @test all(got[k] ≈ want[k] for k in keys(want))
+        @test all(isapprox(got[k], want[k]) for k in keys(want))
     end
 
     @testset "other kinds of table" begin

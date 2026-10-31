@@ -50,17 +50,17 @@ using Test
                              prior=(2, 3))
 
         # the count is rounded for hdi, which can move the width a little
-        @test upper - lower ≈ 0.01 rtol=0.01
+        @test isapprox(upper - lower, 0.01; rtol=0.01)
     end
 
     @testset "HDIWidth agrees with the normal approximation" begin
         # width of a 95% interval is 2 * 1.96 * se when there are many trials
         n = trials_for(HDIWidth(0.002))
-        @test n ≈ trials_for(StandardError(0.002 / 3.92)) rtol=0.001
+        @test isapprox(n, trials_for(StandardError(0.002 / 3.92)); rtol=0.001)
 
         n = trials_for(HDIWidth(0.002); p=0.05)
         expected = trials_for(StandardError(0.002 / 3.92); p=0.05)
-        @test n ≈ expected rtol=0.001
+        @test isapprox(n, expected; rtol=0.001)
     end
 
     @testset "a looser target or a p-value away from 0.5 needs less" begin

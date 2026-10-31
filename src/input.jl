@@ -1,7 +1,7 @@
 """
     tidy_matrix(blocks, treatments, responses)
 
-Arrange tidy rows, one per block and treatment, into a blocks × treatments
+Arrange tidy rows, one per block and treatment, into a blocks x treatments
 matrix of `Float64`. The three vectors have the same length: row `i` says
 that treatment `treatments[i]` had response `responses[i]` in block
 `blocks[i]`.
@@ -75,7 +75,7 @@ end
     wide_matrix(names, columns)
 
 Arrange a wide table, one column of responses per treatment, into a
-blocks × treatments matrix of `Float64`, one row per row of the table.
+blocks x treatments matrix of `Float64`, one row per row of the table.
 `names` are the treatment names and `columns` the columns, in the same
 order. A `missing` response becomes `NaN`, which the test rejects.
 
@@ -113,7 +113,7 @@ function wide_matrix(names, columns)
     return (matrix, collect(names))
 end
 
-# Arrange a table into a blocks × treatments matrix and the treatment
+# Arrange a table into a blocks x treatments matrix and the treatment
 # names. `block`, `treatment` and `response` are column names or `nothing`;
 # the docstring of `RandomizedTukeyProblem` says what each combination
 # means.

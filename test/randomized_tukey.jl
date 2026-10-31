@@ -29,9 +29,10 @@ end
 
     @testset "deterministic columns" begin
         # A: 0.175, B: 0.425, C: 0.6875
-        @test [ r.mean1 for r in results ] ≈ [0.175, 0.175, 0.425]
-        @test [ r.mean2 for r in results ] ≈ [0.425, 0.6875, 0.6875]
-        @test [ r.difference for r in results ] ≈ [-0.25, -0.5125, -0.2625]
+        @test isapprox([ r.mean1 for r in results ], [0.175, 0.175, 0.425])
+        @test isapprox([ r.mean2 for r in results ], [0.425, 0.6875, 0.6875])
+        @test isapprox([ r.difference for r in results ],
+                       [-0.25, -0.5125, -0.2625])
     end
 
     @testset "p-values" begin
