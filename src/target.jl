@@ -54,8 +54,9 @@ distribution; the normal distribution only comes in if the error is turned
 into an interval.
 
 For [`trials_for`](@ref) that is `p * (1 - p) / se^2` trials, rounded up:
-250000 for `se=0.001` in the worst case. (Floating-point error in `se^2` can
-make it one more than the exact count.)
+250000 for `se=0.001` in the worst case. (Floating-point error can make it
+one more than the exact count: `0.1 * 0.9 / 0.01^2` is 900.0000000000001,
+which rounds up to 901.)
 
 Throws an `ArgumentError` if `se` is not positive.
 """

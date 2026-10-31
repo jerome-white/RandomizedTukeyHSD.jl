@@ -10,7 +10,8 @@ using Test
 
         # rounded up: it meets the target, and one trial fewer than the
         # two before it would not (floating-point error in `se^2` can add
-        # one trial to an exact count, as 0.25 / 0.01^2 is not 2500 exactly)
+        # one trial to an exact count: 0.1 * 0.9 / 0.01^2 is
+        # 900.0000000000001)
         for se in (0.01, 0.003, 0.0007), p in (0.5, 0.1, 0.05, 0.001)
             n = trials_for(StandardError(se); p=p)
             @test sqrt(p * (1 - p) / n) <= se
