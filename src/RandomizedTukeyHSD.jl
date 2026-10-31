@@ -12,10 +12,12 @@ export init, solve, solve!, step!
 export trials, pvalues
 export emit, Checkpoint, NoMonitor, LogMonitor
 export MonteCarloPValue, pvalue, hdi, probability_below
+export trials_for, StandardError, HDIWidth
 
 include("input.jl")
 include("problem.jl")
 include("pvalue.jl")
+include("target.jl")
 include("monitor.jl")
 include("solve.jl")
 

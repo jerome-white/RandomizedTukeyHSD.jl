@@ -136,12 +136,19 @@ function probability_below(p::MonteCarloPValue, alpha::Real; prior=(1, 1))
     return _below(a, b, alpha)
 end
 
-# The Beta parameters of the posterior after `p`, from a Beta prior.
-function _posterior(p, prior)
+# Throws unless `prior` is two positive numbers, the parameters of a Beta.
+function _check_prior(prior)
     if length(prior) != 2 || !all(x -> x > 0, prior)
         msg = "prior must be two positive numbers, got $prior"
         throw(ArgumentError(msg))
     end
+
+    return nothing
+end
+
+# The Beta parameters of the posterior after `p`, from a Beta prior.
+function _posterior(p, prior)
+    _check_prior(prior)
     (a, b) = prior
 
     return (a + p.exceeding, b + p.trials - p.exceeding)

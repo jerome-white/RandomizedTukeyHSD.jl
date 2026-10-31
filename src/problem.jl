@@ -7,7 +7,7 @@ The data a randomized Tukey HSD test is run on, to be solved with
 what is tested and nothing about how: the number of trials and the random
 number generator come in at `solve`.
 
-The first form takes `responses`, a blocks × treatments matrix of real
+The first form takes `responses`, a blocks x treatments matrix of real
 numbers, and `treatments`, one name per column.
 
 The second takes a [Tables.jl](https://tables.juliadata.org) table, such as a

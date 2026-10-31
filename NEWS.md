@@ -66,6 +66,17 @@ runs all its trials in one go. `LogMonitor()` emits a Logging record at
 `LogLevel(-1)`, below `Info`, with the `progress` key progress bars read. Adds
 the standard library Logging as a dependency.
 
+### Added: precision targets (#43, #57)
+
+`trials_for(target; p=0.5)` gives the number of trials that meets a
+precision target, to pass to `FixedTrials`. The targets are
+`StandardError(se)`, a bound on the standard error of a p-value, and
+`HDIWidth(width; level=0.95, prior=(1, 1))`, a bound on the width of the
+interval `hdi` reports. `p` is the exact p-value to assume; the default is
+the worst case. A target is a type with a method `trials_for(target, p)`, so
+others (a decision error, say) can be added. The test and its results are
+unchanged.
+
 ### Changed: a random stream for every trial (#34, #57)
 
 Each trial's random stream is now derived from a base seed and the number
