@@ -139,7 +139,9 @@ end
 # exceeding. The Beta parameters need not be integers.
 function _width(target, trials, p)
     (a, b) = target.prior
-    (lower, upper) = _hdi(a + trials * p, b + trials * (1 - p), target.level)
+    a += trials * p
+    b += trials * (1 - p)
+    (lower, upper) = _hdi(a, b, target.level)
 
     return upper - lower
 end
