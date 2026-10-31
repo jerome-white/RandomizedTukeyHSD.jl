@@ -73,7 +73,12 @@ struct StandardError
 end
 
 function trials_for(target::StandardError, p)
-    return _count(p * (1 - p) / target.se^2)
+    trials = p * (1 - p) / target.se^2
+    if !(trials < typemax(Int))
+        throw(ArgumentError("the target needs too many trials"))
+    end
+
+    return max(1, ceil(Int, trials))
 end
 
 """
@@ -96,7 +101,7 @@ Throws an `ArgumentError` if `width` is not positive, `level` is not between
 struct HDIWidth
     width::Float64
     level::Float64
-    prior::Tuple{Float64,Float64}
+    prior::Tuple{Float64, Float64}
 
     function HDIWidth(width::Real; level::Real=0.95, prior=(1, 1))
         if !(width > 0)
@@ -117,15 +122,15 @@ function trials_for(target::HDIWidth, p)
     # to the least that meets it
     high = 1
     while _width(target, high, p) > target.width
-        if high >= 2^61
+        if high > div(typemax(Int), 2)
             throw(ArgumentError("$(target.width) needs too many trials"))
         end
         high *= 2
     end
 
-    low = high ÷ 2
+    low = div(high, 2)
     while high - low > 1
-        middle = low + (high - low) ÷ 2
+        middle = low + div(high - low, 2)
         if _width(target, middle, p) > target.width
             low = middle
         else
@@ -145,13 +150,4 @@ function _width(target, trials, p)
     (lower, upper) = _hdi(a, b, target.level)
 
     return upper - lower
-end
-
-# At least one trial, as an integer, from a count that may be large.
-function _count(trials)
-    if !(trials < 2.0^62)
-        throw(ArgumentError("the target needs too many trials"))
-    end
-
-    return max(1, ceil(Int, trials))
 end
