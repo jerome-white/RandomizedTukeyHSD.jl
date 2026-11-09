@@ -11,10 +11,6 @@ julia --project=. -e 'using Pkg; Pkg.test()'
 ```
 
 or `] test` from the package environment. The suite takes under a minute.
-Run it this way, or with `julia --check-bounds=yes`, which is what
-`Pkg.test` passes: the floating-point ties test in `test/reference.jl`
-(issue #17) gives different values without that flag, so a bare
-`include("test/runtests.jl")` can report failures that CI does not.
 It starts with [Aqua.jl](https://github.com/JuliaTesting/Aqua.jl), the
 community's package-quality checks (method ambiguities, undefined exports,
 stale dependencies, compat bounds, type piracy and others), run with all
