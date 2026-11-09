@@ -11,6 +11,10 @@ julia --project=. -e 'using Pkg; Pkg.test()'
 ```
 
 or `] test` from the package environment. The suite takes under a minute.
+Run it this way, or with `julia --check-bounds=yes`, which is what
+`Pkg.test` passes: the floating-point ties test in `test/reference.jl`
+(issue #17) gives different values without that flag, so a bare
+`include("test/runtests.jl")` can report failures that CI does not.
 It starts with [Aqua.jl](https://github.com/JuliaTesting/Aqua.jl), the
 community's package-quality checks (method ambiguities, undefined exports,
 stale dependencies, compat bounds, type piracy and others), run with all
@@ -49,9 +53,15 @@ its bound allows and runs the tests on Julia 1.10. The other jobs always
 install the newest allowed versions, so they cannot catch a bound that is
 too loose.
 
+- A lower bound means "the oldest version known to pass the tests", not
+  the oldest version that might work. Do not claim a version the job has
+  not run.
 - If the `downgrade` job fails, the lower bound is too low. Raise it to the
   oldest version that passes, in the same pull request, and say why in the
-  commit message.
+  commit message. The usual causes are a function the package uses that
+  the old version lacks (the first run of the job found this for
+  `CommonSolve.step!` and `StatsAPI.pvalue`) and a numerical difference
+  in the old version.
 - If you change the code so that it needs a feature of a newer version of
   a dependency, raise the lower bound in the same commit.
 - Raising a lower bound is an ordinary change, not a breaking one: users
