@@ -25,3 +25,35 @@ jobs:
       - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
+
+  # Check that the lower bounds in [compat] are honest: resolve every
+  # dependency of the package and of test/Project.toml to the lowest
+  # version its [compat] allows, then run the tests. Only the minimum
+  # Julia is used, since older dependency versions are only expected to
+  # work on the oldest Julia the package supports. If this job fails, a
+  # lower bound is too loose: raise it (see CONTRIBUTING.md).
+  downgrade:
+    name: Julia 1.10, lowest compat bounds
+    runs-on: ubuntu-latest
+    env:
+      JULIA_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.10'
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-downgrade-compat@v2
+        with:
+          mode: deps
+          projects: .,test
+      # On Julia 1.11 and older julia-runtest can re-resolve a test/
+      # environment and undo the downgrade, so run the tests directly
+      # from the locked test environment instead.
+      - name: Run the tests at the lowest bounds
+        run: |
+          julia --project=test -e '
+            using Pkg
+            Pkg.develop(PackageSpec(path=pwd()))
+            Pkg.instantiate()
+            include("test/runtests.jl")'
