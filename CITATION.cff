@@ -1,0 +1,55 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software, please cite it using the metadata in this file.
+  Please also cite the sources of the method, listed under references.
+title: RandomizedTukeyHSD.jl
+type: software
+authors:
+  - family-names: White
+    given-names: Jerome
+    orcid: "https://orcid.org/0000-0003-4148-8834"
+repository-code: "https://github.com/jerome-white/RandomizedTukeyHSD.jl"
+license: MIT
+abstract: >-
+  A Julia implementation of the randomized Tukey HSD test for comparing many
+  treatments over a shared set of blocks. In each trial the responses are
+  shuffled across treatments within every block, and the largest minus the
+  smallest treatment mean is recorded. A pair's p-value is the fraction of
+  trials whose range is at least the pair's observed difference. The package
+  also reports the Monte Carlo error of the p-values and chooses the number
+  of trials from a precision target.
+keywords:
+  - randomized Tukey HSD
+  - randomization test
+  - multiple comparisons
+  - Monte Carlo
+  - Julia
+references:
+  - type: article
+    authors:
+      - family-names: Carterette
+        given-names: Benjamin A.
+    title: >-
+      Multiple testing in statistical analysis of systems-based information
+      retrieval experiments
+    journal: ACM Transactions on Information Systems
+    volume: 30
+    issue: 1
+    start: 1
+    end: 34
+    year: 2012
+    month: 2
+    doi: "10.1145/2094072.2094076"
+  - type: book
+    authors:
+      - family-names: Sakai
+        given-names: Tetsuya
+    title: Laboratory Experiments in Information Retrieval
+    section: Multiple Comparison Procedures
+    collection-title: The Information Retrieval Series
+    publisher:
+      name: Springer Singapore
+    start: 59
+    end: 80
+    year: 2018
+    doi: "10.1007/978-981-13-1199-4_4"
