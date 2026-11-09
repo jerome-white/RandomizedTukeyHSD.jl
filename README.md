@@ -392,6 +392,21 @@ on problems small enough to enumerate. See `test/reference/README.md`.
 `benchmark/` holds the benchmark suite, the baseline measured before the
 performance work, and the tables for each change.
 
+## Citing
+
+To cite the package, use "Cite this repository" on the GitHub page, which
+reads [`CITATION.cff`](CITATION.cff). Please also cite the sources of the
+method:
+
+- Carterette, B. A. (2012). Multiple testing in statistical analysis of
+  systems-based information retrieval experiments. *ACM Transactions on
+  Information Systems*, 30(1), 1-34.
+  [doi:10.1145/2094072.2094076](https://doi.org/10.1145/2094072.2094076)
+- Sakai, T. (2018). Multiple Comparison Procedures. In *Laboratory
+  Experiments in Information Retrieval* (The Information Retrieval Series,
+  pp. 59-80). Springer Singapore.
+  [doi:10.1007/978-981-13-1199-4_4](https://doi.org/10.1007/978-981-13-1199-4_4)
+
 ## Layout
 
 | Path         | Contents                                         |
