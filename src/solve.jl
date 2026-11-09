@@ -107,7 +107,8 @@ function _init(problem, rule::FixedTrials, rng, chunk=64;
     end
 
     responses = problem.responses
-    means = vec(mean(responses; dims=1))
+    means = _row_means!(Vector{Float64}(undef, size(responses, 2)),
+                        transpose(responses))
     pairs = _pairs(length(means))
 
     observed = Vector{Float64}(undef, length(pairs))

@@ -1,7 +1,6 @@
 module RandomizedTukeyHSD
 
 using Random
-using Statistics
 using Tables
 using Base.Threads
 using CommonSolve: init, solve, solve!, step!
@@ -43,6 +42,29 @@ function _stream(base::UInt64, i)
     return Xoshiro(base + UInt64(i))
 end
 
+# The mean of each row of `data` (treatments x blocks), adding the blocks one
+# at a time in order. It is used for the observed responses and for every
+# trial, so that a trial that only relabels the treatments (the same
+# relabeling in every block) gets means that are bit-identical to the observed
+# ones, and its range equals the observed difference exactly. `sum` and `mean`
+# with `dims` are not used because they may add in a different order depending
+# on how the code is compiled (for instance with and without
+# `--check-bounds=yes`), which changes the last bit of a mean and so whether
+# a tie is counted (issue #74).
+function _row_means!(means, data)
+    (ntreatments, nblocks) = size(data)
+
+    for t in 1:ntreatments
+        total = 0.0
+        for b in 1:nblocks
+            total += data[t, b]
+        end
+        means[t] = total / nblocks
+    end
+
+    return means
+end
+
 # Fill `ranges` with the range of the treatment means of that many trials,
 # which are trials `first`, `first + 1`, ... of the run. Every trial shuffles
 # the responses as observed, not the arrangement the trial before left, so
@@ -53,7 +75,7 @@ function _trials!(ranges, responses, base, first)
     observed = Matrix{Float64}(undef, ntreatments, nblocks)
     observed .= transpose(responses)
     data = similar(observed)
-    sums = Matrix{Float64}(undef, ntreatments, 1)
+    means = Vector{Float64}(undef, ntreatments)
 
     for i in eachindex(ranges)
         rng = _stream(base, first + i - 1)
@@ -62,9 +84,8 @@ function _trials!(ranges, responses, base, first)
             shuffle!(rng, col)
         end
 
-        sum!(sums, data)
-        sums ./= nblocks
-        ranges[i] = maximum(sums) - minimum(sums)
+        _row_means!(means, data)
+        ranges[i] = maximum(means) - minimum(means)
     end
 
     return nothing
