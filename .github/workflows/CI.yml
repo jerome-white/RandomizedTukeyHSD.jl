@@ -49,10 +49,12 @@ jobs:
           projects: .,test
       # On Julia 1.11 and older julia-runtest can re-resolve a test/
       # environment and undo the downgrade, so run the tests directly
-      # from the locked test environment instead.
+      # from the locked test environment instead. --check-bounds=yes is
+      # what Pkg.test and julia-runtest use; without it the floating-point
+      # ties test in test/reference.jl gives different values.
       - name: Run the tests at the lowest bounds
         run: |
-          julia --project=test -e '
+          julia --check-bounds=yes --project=test -e '
             using Pkg
             Pkg.develop(PackageSpec(path=pwd()))
             Pkg.instantiate()
