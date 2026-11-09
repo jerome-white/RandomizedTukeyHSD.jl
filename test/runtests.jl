@@ -4,6 +4,7 @@ using RandomizedTukeyHSD
 include("helpers.jl")
 
 @testset "RandomizedTukeyHSD" begin
+    include("aqua.jl")
     include("randomized_tukey.jl")
     include("streams.jl")
     include("reference.jl")
