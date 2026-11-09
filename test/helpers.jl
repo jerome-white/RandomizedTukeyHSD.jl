@@ -67,6 +67,26 @@ function permutations_of(n)
     ]
 end
 
+# The mean of each column, adding its entries top to bottom. This is written
+# out, and is not `mean(x; dims=1)`, because the order in which that adds can
+# change with how Julia is started (for instance with and without
+# `--check-bounds=yes`), which changes the last bit of a mean (issue #74).
+# The library adds in this order, so `exact_pvalues(...; tol=0.0)` reproduces
+# its floating-point comparison.
+function column_means(x)
+    means = zeros(size(x, 2))
+
+    for j in axes(x, 2)
+        total = 0.0
+        for i in axes(x, 1)
+            total += x[i, j]
+        end
+        means[j] = total / size(x, 1)
+    end
+
+    return means
+end
+
 # The exact p-value of every pair, in the order of the results of solve:
 # the fraction of all equally likely within-block arrangements whose range
 # of treatment means is at least the pair's observed absolute difference.
@@ -75,7 +95,7 @@ end
 # floating-point sums happened to round (see issue #17).
 function exact_pvalues(responses; tol=1e-9)
     (nblocks, ntreatments) = size(responses)
-    means = vec(mean(responses; dims=1))
+    means = column_means(responses)
     pairs = [ (j, k) for j in 1:ntreatments-1 for k in j+1:ntreatments ]
     observed = [ abs(means[j] - means[k]) for (j, k) in pairs ]
 
@@ -87,7 +107,7 @@ function exact_pvalues(responses; tol=1e-9)
         shuffled = [
             responses[t, choice[t][s]] for t in 1:nblocks, s in 1:ntreatments
         ]
-        m = vec(mean(shuffled; dims=1))
+        m = column_means(shuffled)
         d = maximum(m) - minimum(m)
         counts .+= d .>= observed .- tol
         total += 1

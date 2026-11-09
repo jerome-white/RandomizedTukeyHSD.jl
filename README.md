@@ -42,8 +42,7 @@ Pkg.add(url="https://github.com/jerome-white/RandomizedTukeyHSD.jl")
 ```
 
 The library needs Julia 1.10 or newer and depends only on `CommonSolve`,
-`Logging`, `Random`, `SpecialFunctions`, `Statistics`, `StatsAPI` and
-`Tables`.
+`Logging`, `Random`, `SpecialFunctions`, `StatsAPI` and `Tables`.
 
 ## Using the library
 
@@ -368,6 +367,14 @@ the 4-block example in `test/data/tiny.csv` the pair (A, B) converges to
 gives because it rounds ranges to six decimals. Responses with many distinct
 values (most real metrics) are far less likely to be affected. The effect
 is recorded in `test/reference.jl` (issue #17).
+
+The comparison does not depend on how Julia is started or compiled. The
+observed means and the means of every trial are added in the same fixed
+order, one block after the other, so a trial that only relabels the
+treatments the same way in every block has bit-for-bit the observed means
+and is always counted. (`sum` and `mean` with `dims` may add in another
+order, for example with and without `--check-bounds=yes`, which changed the
+last bit and the p-value on tied data before issue #74.)
 
 ## How it is checked
 

@@ -6,6 +6,7 @@ include("helpers.jl")
 @testset "RandomizedTukeyHSD" begin
     include("aqua.jl")
     include("randomized_tukey.jl")
+    include("summation.jl")
     include("streams.jl")
     include("reference.jl")
     include("threads.jl")

@@ -147,3 +147,26 @@ results = solve(problem, FixedTrials(10_000); rng=Xoshiro(1))
 - P-values are counted by binary search over the sorted ranges, and the
   trials no longer allocate (#4, #5, #20, #21); results for a fixed
   generator state are the same as before these two changes.
+
+### Changed: the means are added in a fixed order (#74)
+
+- The observed means and the means of every trial are now added by one
+  plain loop, one block after the other. They were added by `mean(...;
+  dims=1)` and `sum!`, whose order of addition can change with how Julia is
+  started (for instance with and without `--check-bounds=yes`). That
+  changed the last bit of a mean, and so whether a trial that equals the
+  observed difference was counted. On `test/data/tiny.csv` the pair (A, B)
+  gave 0.3935 in one mode and 0.3889 in the other for the same seed and
+  data (the library's p-value, 400 000 trials: 0.3942 and 0.3894). It now
+  gives the same value in every mode.
+- In the default mode the old code could report a p-value of 0 for the
+  pair with the largest difference when the responses were on a grid
+  (`tiny.csv`, pair (A, C): 0.0 against 0.00472 now), although the smallest
+  possible p-value is 6/1296 there, because the observed arrangement and its
+  relabelings are themselves among the arrangements. They are now always
+  counted.
+- For random continuous responses (50 blocks and 6 treatments, 8 blocks and
+  4 treatments) the p-values for a fixed seed are identical before and
+  after. For tied data they can differ from earlier development versions.
+- The package no longer depends on `Statistics` (it used it only for that
+  one `mean`).
