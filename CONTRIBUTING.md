@@ -17,6 +17,37 @@ stale dependencies, compat bounds, type piracy and others), run with all
 checks at their defaults. If a check has to be relaxed, pass that one
 keyword in `test/aqua.jl` and say why in a comment.
 
+## Documentation
+
+The documentation is built with [Documenter.jl](https://documenter.juliadocs.org)
+from `docs/`: the pages are in `docs/src/`, the configuration in
+`docs/make.jl`. To build it:
+
+```bash
+julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+julia --project=docs docs/make.jl
+```
+
+and open `docs/build/index.html`. The build fails on a doctest that does not
+match, a link that does not resolve, and an exported name without a
+docstring (`checkdocs = :exports`), and CI runs the same build on every pull
+request. So:
+
+- Document every exported name with a docstring; the API reference is
+  generated from the docstrings, and the manual pages link to them with
+  `` [`name`](@ref) ``.
+- Use a `jldoctest` for an example whose output is deterministic (integers,
+  strings). Use `@example` where the output depends on the random stream,
+  which Julia does not promise to keep between versions, so a new Julia does
+  not fail the build for a harmless change.
+- Keep the pages and the docstrings in step with the code in the same change.
+  The README stays short; put new explanation in `docs/src/`.
+
+CI deploys the site to the `gh-pages` branch: the development version on a
+push to `master`, a versioned copy on a tag, and a preview for each pull
+request from this repository (the link is posted on the pull request).
+Deployment signs in with the `DOCUMENTER_KEY` repository secret.
+
 ## Dependencies and compat
 
 `[compat]` in a `Project.toml` states which versions of each dependency the

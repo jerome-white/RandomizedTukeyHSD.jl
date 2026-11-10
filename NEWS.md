@@ -8,11 +8,18 @@ The numbers are issues and pull requests of the repository.
 
 ## Unreleased
 
+### Added
+
+- The documentation site, built with Documenter.jl from `docs/` and deployed
+  to GitHub Pages (#69): the manual, the API reference and a glossary. The
+  README is now a short front door that links to it, and `?RandomizedTukeyHSD`
+  describes the package at the REPL.
+
 ### Renamed
 
 The vocabulary moved from the information-retrieval words the method came
-with to the statistical ones (#38, #42). The README has a table that maps
-the words.
+with to the statistical ones (#38, #42). The documentation has a glossary that
+maps the words.
 
 | Before                         | Now                           |
 |--------------------------------|-------------------------------|
