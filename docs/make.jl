@@ -11,6 +11,16 @@ makedocs(;
     checkdocs=:exports,
     pages=[
         "Home" => "index.md",
+        "Manual" => [
+            "Glossary" => "glossary.md",
+            "Passing a table" => "tables.md",
+            "Stepping and watching a run" => "running.md",
+            "Missing responses" => "missing.md",
+            "How precise is a p-value?" => "precision.md",
+            "Threads and reproducibility" => "reproducibility.md",
+            "Known limitation: floating-point ties" => "ties.md",
+            "How it is checked" => "verification.md",
+        ],
         "API reference" => "api.md",
     ],
 )
