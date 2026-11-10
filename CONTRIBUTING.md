@@ -142,3 +142,57 @@ package that depends on an unregistered one.
 **The Julia floor** is the `julia` entry in the root `Project.toml` (now
 1.10), and CI tests it. Raising it is a user-visible change: record it in
 `NEWS.md`.
+
+## Use of AI
+
+This package is developed with an AI coding agent, and contributors may use
+one too. This section says how, so that readers, reviewers and journals can
+judge the work, and what is expected of anyone who contributes with AI.
+
+### How this package was developed
+
+- The first implementation, a script, was written by the maintainer by hand,
+  before coding agents were available: the first 12 commits, from
+  2020-10-13 to 2021-09-15.
+- Since 2026-10-20 (commit `f1d9d51`, "Create the project structure") the
+  work has been done with Claude Code, using Claude Sonnet 5.5
+  (`claude-sonnet-5-5`). The agent turned the script into a Julia package and
+  added what came after: the `init`/`solve`/`step!` interface, monitors,
+  `trials_for`, table input, tests, benchmarks and documentation. The
+  maintainer set the direction, reviewed the work on GitHub, and corrected
+  it where it departed from the design or style they wanted.
+- Every change since then has an issue, a branch and a pull request, so the
+  requests, reviews and corrections can be read in order. In practice the
+  agent drafts the issues, pull requests and commit messages, and the
+  maintainer reads them on GitHub and asks for changes; the maintainer
+  merges every pull request.
+- Every commit an agent wrote has a `Co-Authored-By:` trailer naming the
+  model, so the model behind any commit is in the history:
+
+  ```bash
+  git log --format='%h %(trailers:key=Co-Authored-By,valueonly)'
+  ```
+
+  The 12 commits before 2026-10-20 have none because they are human.
+- Review is not the only evidence of correctness. The library is tested
+  against the exact p-values (every within-block arrangement enumerated) and
+  against Sakai's own implementation (see `test/reference/README.md`), and CI
+  runs the tests on two Julia versions, at the lowest dependency versions,
+  and builds the documentation.
+
+### What is expected of contributors
+
+These are requirements, and they apply to people and agents alike.
+
+- **Say that AI helped**, in the pull request description. Keep the
+  `Co-Authored-By:` trailer on commits an agent wrote.
+- **You are accountable for what you post** (issues, comments, commits,
+  pull requests, code), whoever or whatever wrote it. Maintainers may close
+  contributions with unverified claims, text that does not match the code, or
+  changes nobody asked for.
+- **Do not run an agent unattended.** An agent works in a session that a
+  person is running and answers for.
+- **Hold AI-written tests and documentation to the standard of code:** the
+  tests must test something, and the documentation must be true of the code.
+- **Say what you verified** in the pull request, and what you did not.
+- The rules in "Making a change" apply, including an issue for every change.
