@@ -16,7 +16,7 @@ named tuple per pair of treatments, with the fields `treatment1`,
 `treatment2`, `mean1`, `mean2`, `difference` and `pvalue`.
 
 See [`RandomizedTukeyProblem`](@ref), [`FixedTrials`](@ref) and
-[`solve`](@ref) to start, and the documentation at
+[`solve`](@ref CommonSolve.solve!) to start, and the documentation at
 https://jerome-white.github.io/RandomizedTukeyHSD.jl for the rest.
 """
 module RandomizedTukeyHSD

@@ -3,7 +3,7 @@
     RandomizedTukeyProblem(table; block, treatment, response)
 
 The data a randomized Tukey HSD test is run on, to be solved with
-[`solve`](@ref) and a rule such as [`FixedTrials`](@ref). A problem says
+[`solve`](@ref CommonSolve.solve!) and a rule such as [`FixedTrials`](@ref). A problem says
 what is tested and nothing about how: the number of trials and the random
 number generator come in at `solve`.
 
