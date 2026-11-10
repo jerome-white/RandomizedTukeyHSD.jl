@@ -1,0 +1,5 @@
+# RandomizedTukeyHSD.jl
+
+```@docs
+RandomizedTukeyHSD
+```
