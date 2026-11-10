@@ -4,6 +4,40 @@ This file records the conventions that contributors, human or not, are
 expected to follow. It is short on purpose: where a convention is the
 standard one in the Julia ecosystem it is named, not re-explained.
 
+## Making a change
+
+These rules apply to every contributor, human or agent.
+
+- **Every change has an issue**, however small. Describe the problem and
+  the intended change fully enough that someone without your context can
+  act on it. Do not shorten.
+- **One issue, one branch, one pull request.** Branch from `master` as
+  `issue-N-short-slug`. The pull request description starts with
+  `Closes #N` and says what was verified and what was not.
+- **Commit at each logical step**, not once at the end. A commit message
+  has a summary line, a body that says what changed and why (it is part of
+  the documentation: `git blame` should answer "why is it like this"), and
+  ends with `Refs #N`.
+- **The maintainer merges.** Do not push to `master`, and do not merge your
+  own pull request.
+- **Run the tests, and build the documentation if you touched it,** before
+  you open the pull request (see below). Do not start a job that runs for
+  more than a minute or two inside an agent session: give the maintainer the
+  command to run.
+- **Changes to the behaviour of `src/`** need the maintainer's agreement,
+  recorded on the issue, before they are made. Performance work, style and
+  docstrings are covered by the issue itself. Tests are yours to change.
+
+## Style
+
+- Lines are at most 80 columns, and code is ASCII.
+- Check an argument with an `if` block that throws, not with
+  `cond || throw(...)`.
+- No module-level mutable globals.
+- A helper used once is written inline, not as a function.
+- Follow the style of the file you are editing. (A formatter is not yet
+  enforced.)
+
 ## Running the tests
 
 ```bash
