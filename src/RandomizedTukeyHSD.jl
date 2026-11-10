@@ -1,3 +1,24 @@
+"""
+    RandomizedTukeyHSD
+
+The randomized Tukey HSD test for comparing many treatments (systems, models,
+methods) over a shared set of blocks (topics, datasets, folds).
+
+```julia
+using Random, RandomizedTukeyHSD
+
+problem = RandomizedTukeyProblem(responses; treatments=["A", "B", "C"])
+results = solve(problem, FixedTrials(10_000); rng=Xoshiro(1))
+```
+
+`responses` has blocks in rows and treatments in columns. `results` has one
+named tuple per pair of treatments, with the fields `treatment1`,
+`treatment2`, `mean1`, `mean2`, `difference` and `pvalue`.
+
+See [`RandomizedTukeyProblem`](@ref), [`FixedTrials`](@ref) and
+[`solve`](@ref CommonSolve.solve!) to start, and the documentation at
+https://jerome-white.github.io/RandomizedTukeyHSD.jl for the rest.
+"""
 module RandomizedTukeyHSD
 
 using Random

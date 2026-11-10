@@ -1,0 +1,35 @@
+name: Documentation
+
+# Builds the documentation on every pull request (a failed build, doctest or
+# missing docstring fails the check) and deploys it to the gh-pages branch:
+# the development version on a push to master, a versioned copy on a tag,
+# and a preview for each pull request from this repository.
+
+on:
+  push:
+    branches: [master]
+    tags: '*'
+  pull_request:
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+permissions:
+  contents: write
+  statuses: write
+
+jobs:
+  docs:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-docdeploy@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
