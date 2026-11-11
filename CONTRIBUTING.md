@@ -44,7 +44,8 @@ following rules manually:
 - Check an argument with an `if` block that throws, not with
   `cond || throw(...)`.
 - No module-level mutable globals.
-- A helper used once is written inline, not as a function.
+- A helper used once is written inline, not as a function. The one
+  exception is a script's `main`, which keeps its loops out of global scope.
 
 In general, follow the style of the file you are editing.
 
