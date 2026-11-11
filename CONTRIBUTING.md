@@ -1,8 +1,52 @@
 # Contributing
 
-This file records the conventions that contributors, human or not, are
-expected to follow. It is short on purpose: where a convention is the
-standard one in the Julia ecosystem it is named, not re-explained.
+This file records the conventions that contributors, human or
+otherwise, are expected to follow. It is short on purpose: where a
+convention is the standard one in the Julia ecosystem it is named, not
+re-explained.
+
+## Making a change
+
+These rules apply to every contributor, human or agent:
+
+- **Every change has an issue**; however small. Describe the problem
+  and the intended change fully enough that someone without your
+  context can act on it. Length should be commensurate with achieving
+  that level of clarity.
+- **One issue, one branch, one pull request.** Branch from `master`
+  and name the branch `<type>/<issue>/<short-slug>`. This extends
+  [Conventional Branches](https://conventionalbranch.org/): `<type>`
+  is one of `feature`, `bugfix`, `hotfix`, `release` or `chore`, and
+  `<short-slug>` is a few lowercase words joined by hyphens. We add
+  `<issue>`, the number of the issue, as its own segment, which the
+  convention does not define. Examples: `feature/79/ai-use` or
+  `bugfix/74/summation-order`. Use `chore` for changes to
+  documentation, tests, CI and other upkeep. The pull
+  request description starts with `Closes #N`, explains what changed,
+  why it changed, and the problem it solves. It should also say what
+  was verified and what was not.
+- **Commit at each logical step**; not once at the end. A commit
+  message has a summary line, a body that says what changed and why,
+  and ends with `Refs #N` (where N is the issue being
+  addressed). Commit history is viewed as part of the project
+  documentation: `git blame` should answer "why is it like this".
+- **The maintainer merges.** Do not push to `master`, and do not merge your
+  own pull request.
+- **Run the tests, and build the documentation if you touched it,** before
+  you open the pull request (see below).
+
+## Style
+
+As a formatter is not yet enforced (#60), please stick to the
+following rules manually:
+
+- Lines are at most 80 columns, and code is ASCII.
+- Check an argument with an `if` block that throws, not with
+  `cond || throw(...)`.
+- No module-level mutable globals.
+- A helper used once is written inline, not as a function.
+
+In general, follow the style of the file you are editing.
 
 ## Running the tests
 
@@ -108,3 +152,63 @@ package that depends on an unregistered one.
 **The Julia floor** is the `julia` entry in the root `Project.toml` (now
 1.10), and CI tests it. Raising it is a user-visible change: record it in
 `NEWS.md`.
+
+## Use of AI
+
+This package is developed with an AI coding agent, and contributors may use
+one too. This section says how, so that readers, reviewers and journals can
+judge the work, and what is expected of anyone who contributes with AI.
+
+### How this package was developed
+
+- The initial commit came from another project developed by the
+  maintainer
+  ([jerome-white/sakai-book](https://github.com/jerome-white/sakai-book/blob/master/chapters/04/rthsd.jl)). That
+  implementation was developed by hand, not using a coding agent. The
+  first 12 commits in this repository (2020-10-13 to 2021-09-15) come
+  from that.
+- Since 2026-10-20 (commit `f1d9d51`, "Create the project structure")
+  the work has been done with Claude Code, using Claude Sonnet 5.5
+  (`claude-sonnet-5-5`). The agent turned the script into a Julia
+  package and added what came after: the `init`/`solve`/`step!`
+  interface, monitors, `trials_for`, table input, tests, benchmarks
+  and documentation. The maintainer set the direction, the
+  architecture, reviewed the work on GitHub, and corrected it where it
+  departed from the design or style they wanted.
+- Every change has an issue, a branch and a pull request; so the
+  requests, reviews and corrections can be read in order. In practice
+  the maintainer sets the agenda: the problem being solved and how
+  that problem breaks down into one or more issues. The agent then
+  drafts the issues, pull requests and commit messages. The maintainer
+  reads them on GitHub and asks for changes; the maintainer merges
+  every pull request.
+- Every commit an agent wrote has a `Co-Authored-By:` trailer naming the
+  model, so the model behind any commit is in the history:
+
+  ```bash
+  git log --format='%h %(trailers:key=Co-Authored-By,valueonly)'
+  ```
+
+  Commits that do not contain that trailer came from a human.
+- Review is not the only evidence of correctness. The library is tested
+  against the exact p-values (every within-block arrangement enumerated) and
+  against Sakai's own implementation (see `test/reference/README.md`), and CI
+  runs the tests on two Julia versions, at the lowest dependency versions,
+  and builds the documentation.
+
+### What is expected of contributors
+
+These are requirements. They apply to both people and agents.
+
+- **Say that AI helped**, in the pull request description. Keep the
+  `Co-Authored-By:` trailer on commits an agent wrote.
+- **You are accountable for what you post** (issues, comments, commits,
+  pull requests, code), whoever or whatever wrote it. Maintainers may close
+  contributions with unverified claims, text that does not match the code, or
+  changes nobody asked for.
+- **Do not run an agent unattended.** An agent works in a session that a
+  person is running and answers for.
+- **Hold AI-written tests and documentation to the standard of code:** the
+  tests must test something, and the documentation must be true of the code.
+- **Say what you verified** in the pull request, and what you did not.
+- The rules in "Making a change" apply, including an issue for every change.
