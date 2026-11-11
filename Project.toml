@@ -1,7 +1,7 @@
 name = "RandomizedTukeyHSD"
 uuid = "4a942d2e-43ad-4dde-8fef-c59cc3eb0421"
 authors = ["Jerome White"]
-version = "0.1.0-DEV"
+version = "0.1.0"
 
 [deps]
 CommonSolve = "38540f10-b2f7-11e9-35d8-d573e4eb0ff2"

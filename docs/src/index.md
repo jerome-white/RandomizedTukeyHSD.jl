@@ -14,7 +14,7 @@ is not corrected by adding one to the count, so a p-value of 0 means
 p < 1/`trials`.
 
 !!! note "Status"
-    Pre-release (`0.1.0-DEV`), not yet in the General registry.
+    Version 0.1.0, the first release.
 
 ## Installing
 
