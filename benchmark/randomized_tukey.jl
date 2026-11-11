@@ -15,7 +15,7 @@ const TREATMENTS = (5, 10, 20, 50, 100)
 const BLOCKS = (50, 100)
 const TRIALS = (1_000, 10_000)
 
-function environment()
+function main()
     cpu = first(Sys.cpu_info())
 
     println("- Julia: ", VERSION)
@@ -23,33 +23,25 @@ function environment()
     println("- Threads: ", Threads.nthreads(), " default, ",
             Threads.nthreads(:interactive), " interactive")
     println("- Load average: ", join(round.(Sys.loadavg(); digits=2), " "))
-end
-
-function measure(ntreatments, nblocks, trials)
-    rng = Xoshiro(ntreatments * 1_000_000 + nblocks)
-    problem = RandomizedTukeyProblem(rand(rng, nblocks, ntreatments))
-    rule = FixedTrials(trials)
-
-    # compile and warm up outside the measurement
-    solve(problem, FixedTrials(10))
-
-    return @benchmark(
-        solve($problem, $rule),
-        samples=10,
-        seconds=60,
-        evals=1
-    )
-end
-
-function main()
-    environment()
     println()
     println("| treatments | blocks | trials | median (ms) | us/trial | ",
             "min (ms) | MiB | allocs |")
     println("|--:|--:|--:|--:|--:|--:|--:|--:|")
 
     for ntreatments in TREATMENTS, nblocks in BLOCKS, trials in TRIALS
-        trial = measure(ntreatments, nblocks, trials)
+        rng = Xoshiro(ntreatments * 1_000_000 + nblocks)
+        problem = RandomizedTukeyProblem(rand(rng, nblocks, ntreatments))
+        rule = FixedTrials(trials)
+
+        # compile and warm up outside the measurement
+        solve(problem, FixedTrials(10))
+
+        trial = @benchmark(
+            solve($problem, $rule),
+            samples=10,
+            seconds=60,
+            evals=1
+        )
         median_ns = time(median(trial))
         @printf("| %d | %d | %d | %.1f | %.2f | %.1f | %.1f | %d |\n",
                 ntreatments,
