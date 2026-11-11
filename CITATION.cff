@@ -3,6 +3,8 @@ message: >-
   If you use this software, please cite it using the metadata in this file.
   Please also cite the sources of the method, listed under references.
 title: RandomizedTukeyHSD.jl
+version: 0.1.0
+date-released: 2026-11-11
 type: software
 authors:
   - family-names: White

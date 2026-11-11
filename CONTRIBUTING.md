@@ -213,3 +213,50 @@ These are requirements. They apply to both people and agents.
   tests must test something, and the documentation must be true of the code.
 - **Say what you verified** in the pull request, and what you did not.
 - The rules in "Making a change" apply, including an issue for every change.
+
+## Releasing
+
+A release is an ordinary change: it has an issue, a branch and a pull
+request, and the maintainer merges it. Versions follow
+[semantic versioning](https://semver.org) (for a `0.x` version, a change of
+the minor number may break the interface).
+
+**In the release pull request**
+
+1. `NEWS.md`: name the section with the version and the date,
+   `## X.Y.Z (YYYY-MM-DD)`, and check that it lists every user-visible
+   change since the last release.
+2. `Project.toml`: `version = "X.Y.Z"`.
+3. `CITATION.cff`: `version: X.Y.Z` and `date-released: YYYY-MM-DD`. These
+   three versions and the two dates must be equal; they are changed together
+   or not at all.
+4. The tests pass on every CI job (including the lowest-bounds job), and the
+   documentation builds.
+
+**Register** (the maintainer does this, once the pull request is merged)
+
+5. Comment `@JuliaRegistrator register` on the merge commit on GitHub (or in
+   an issue). The JuliaRegistrator GitHub app opens a pull request on the
+   [General registry](https://github.com/JuliaRegistries/General) with the
+   version, from the `Project.toml` of that commit.
+6. The registry's AutoMerge checks it: compat bounds, the package name, a
+   license, that the package loads. A new package waits three days before it
+   merges; a new version of a registered package waits less. If a check
+   fails, the pull request says why; fix it on `master` and comment
+   `@JuliaRegistrator register` again.
+
+**After the registry merges**
+
+7. The TagBot workflow tags the registered commit and creates the GitHub
+   release. The tag starts the Documentation workflow, which publishes the
+   versioned documentation, and the release is archived by Zenodo, which gives
+   it a DOI.
+8. In a follow-up pull request: add the DOI to `CITATION.cff` and the README
+   "Citing" section (once Zenodo has issued it; never guess one), and check
+   that the Zenodo record shows the authors, ORCID and license of
+   `CITATION.cff`. After the first release, also change the README install
+   line to `Pkg.add("RandomizedTukeyHSD")` and the README docs badge from
+   `dev` to `stable`.
+
+A registered version cannot be changed or reused. If a release is wrong, fix
+it on `master` and release the next patch version.

@@ -18,7 +18,7 @@ the fraction of trials whose range is at least the pair's observed
 difference. It is not corrected by adding one to the count, so a p-value
 of 0 means p < 1/`trials`.
 
-**Status:** pre-release (`0.1.0-DEV`), not in the General registry.
+**Status:** version 0.1.0, the first release.
 
 ## Installing
 

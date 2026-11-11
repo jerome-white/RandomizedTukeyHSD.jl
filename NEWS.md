@@ -1,12 +1,12 @@
 # Release notes
 
-The package is pre-release (`0.1.0-DEV`) and has not been tagged, so every
-entry below is under "Unreleased" and renames are made without a
-deprecation period. This file records the renames in particular, so that
-someone reading an old issue or pull request can find what a term became.
-The numbers are issues and pull requests of the repository.
+This is the first release, so every entry below is under 0.1.0 and the
+renames were made without a deprecation period. This file records the
+renames in particular, so that someone reading an old issue or pull request
+can find what a term became. The numbers are issues and pull requests of
+the repository.
 
-## Unreleased
+## 0.1.0 (2026-11-11)
 
 ### Added
 
