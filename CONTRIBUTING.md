@@ -167,7 +167,6 @@ judge the work, and what is expected of anyone who contributes with AI.
   implementation was developed by hand, not using a coding agent. The
   first 12 commits in this repository (2020-10-13 to 2021-09-15) come
   from that.
-
 - Since 2026-10-20 (commit `f1d9d51`, "Create the project structure")
   the work has been done with Claude Code, using Claude Sonnet 5.5
   (`claude-sonnet-5-5`). The agent turned the script into a Julia
@@ -190,7 +189,7 @@ judge the work, and what is expected of anyone who contributes with AI.
   git log --format='%h %(trailers:key=Co-Authored-By,valueonly)'
   ```
 
-  The 12 commits before 2026-10-20 have none because they are human.
+  Commits that do not contain that trailer came from a human.
 - Review is not the only evidence of correctness. The library is tested
   against the exact p-values (every within-block arrangement enumerated) and
   against Sakai's own implementation (see `test/reference/README.md`), and CI
