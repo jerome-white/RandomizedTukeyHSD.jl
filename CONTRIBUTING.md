@@ -13,10 +13,18 @@ These rules apply to every contributor, human or agent:
   and the intended change fully enough that someone without your
   context can act on it. Length should be commensurate with achieving
   that level of clarity.
-- **One issue, one branch, one pull request.** Branch from `master` as
-  `issue-N-short-slug`. The pull request description starts with
-  `Closes #N`, explains what changed, why it changed, and the problem
-  it solves. It should also say what was verified and what was not.
+- **One issue, one branch, one pull request.** Branch from `master`
+  and name the branch `<type>/<issue>/<short-slug>`. This extends
+  [Conventional Branches](https://conventionalbranch.org/): `<type>`
+  is one of `feature`, `bugfix`, `hotfix`, `release` or `chore`, and
+  `<short-slug>` is a few lowercase words joined by hyphens. We add
+  `<issue>`, the number of the issue, as its own segment, which the
+  convention does not define. Examples: `feature/79/ai-use` or
+  `bugfix/74/summation-order`. Use `chore` for changes to
+  documentation, tests, CI and other upkeep. The pull
+  request description starts with `Closes #N`, explains what changed,
+  why it changed, and the problem it solves. It should also say what
+  was verified and what was not.
 - **Commit at each logical step**; not once at the end. A commit
   message has a summary line, a body that says what changed and why,
   and ends with `Refs #N` (where N is the issue being
