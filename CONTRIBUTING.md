@@ -62,6 +62,11 @@ stale dependencies, compat bounds, type piracy and others), run with all
 checks at their defaults. If a check has to be relaxed, pass that one
 keyword in `test/aqua.jl` and say why in a comment.
 
+CI uploads the coverage of one job to [Codecov](https://codecov.io/gh/jerome-white/RandomizedTukeyHSD.jl)
+(the latest Julia on four threads). It is information for review, not a
+gate: a failed upload does not fail CI, and no coverage level is required.
+A change that adds code should add the tests that cover it.
+
 ## Documentation
 
 The documentation is built with [Documenter.jl](https://documenter.juliadocs.org)

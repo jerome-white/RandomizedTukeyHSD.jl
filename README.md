@@ -3,6 +3,7 @@
 [![CI](https://github.com/jerome-white/RandomizedTukeyHSD.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/jerome-white/RandomizedTukeyHSD.jl/actions/workflows/CI.yml)
 [![Documentation](https://github.com/jerome-white/RandomizedTukeyHSD.jl/actions/workflows/Documentation.yml/badge.svg)](https://github.com/jerome-white/RandomizedTukeyHSD.jl/actions/workflows/Documentation.yml)
 [![Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://jerome-white.github.io/RandomizedTukeyHSD.jl/dev/)
+[![Coverage](https://codecov.io/gh/jerome-white/RandomizedTukeyHSD.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/jerome-white/RandomizedTukeyHSD.jl)
 
 A Julia implementation of the randomized Tukey HSD test for comparing
 many treatments (systems, models, methods) over a shared set of blocks
