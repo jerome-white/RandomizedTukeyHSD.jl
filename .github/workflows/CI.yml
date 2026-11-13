@@ -25,6 +25,18 @@ jobs:
       - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
+      # Coverage is uploaded from one job: the latest Julia on four threads,
+      # which also runs the threaded code paths. A failed upload (the service
+      # is occasionally unavailable) should not block a pull request, so it
+      # does not fail the job; the badge shows when the report goes stale.
+      - uses: julia-actions/julia-processcoverage@v1
+        if: matrix.version == '1' && matrix.threads == '4'
+      - uses: codecov/codecov-action@v5
+        if: matrix.version == '1' && matrix.threads == '4'
+        with:
+          files: lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
 
   # Check that the lower bounds in [compat] are honest: resolve every
   # dependency of the package and of test/Project.toml to the lowest
