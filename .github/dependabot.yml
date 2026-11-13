@@ -1,0 +1,12 @@
+# Proposes newer versions of the GitHub Actions the workflows use, as pull
+# requests the maintainer reviews and merges (see CONTRIBUTING.md).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns:
+          - "*"
