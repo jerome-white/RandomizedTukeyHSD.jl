@@ -30,6 +30,13 @@ These rules apply to every contributor, human or agent:
   and ends with `Refs #N` (where N is the issue being
   addressed). Commit history is viewed as part of the project
   documentation: `git blame` should answer "why is it like this".
+- **Dependabot pull requests are the exception** to the rules above that
+  every change has an issue and to the branch name: Dependabot opens them
+  to bump the versions of the GitHub Actions in `.github/workflows`, and the
+  pull request itself is the record. The maintainer merges them once CI
+  passes, after reading the release notes of a major bump. (They cannot use
+  the repository's secrets, so the coverage upload and the documentation
+  preview are absent from them; neither fails the checks.)
 - **The maintainer merges.** Do not push to `master`, and do not merge your
   own pull request.
 - **Run the tests, and build the documentation if you touched it,** before
