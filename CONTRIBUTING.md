@@ -241,7 +241,9 @@ the minor number may break the interface).
 2. `Project.toml`: `version = "X.Y.Z"`.
 3. `CITATION.cff`: `version: X.Y.Z` and `date-released: YYYY-MM-DD`. These
    three versions and the two dates must be equal; they are changed together
-   or not at all.
+   or not at all. Also delete the `doi:` line: it is the DOI of the previous
+   version, and the new version does not have one until Zenodo issues it
+   (step 8). The `identifiers` entry for all versions stays.
 4. The tests pass on every CI job (including the lowest-bounds job), and the
    documentation builds.
 
@@ -262,13 +264,14 @@ the minor number may break the interface).
 7. The TagBot workflow tags the registered commit and creates the GitHub
    release. The tag starts the Documentation workflow, which publishes the
    versioned documentation, and the release is archived by Zenodo, which gives
-   it a DOI.
-8. In a follow-up pull request: add the DOI to `CITATION.cff` and the README
-   "Citing" section (once Zenodo has issued it; never guess one), and check
-   that the Zenodo record shows the authors, ORCID and license of
-   `CITATION.cff`. After the first release, also change the README install
-   line to `Pkg.add("RandomizedTukeyHSD")` and the README docs badge from
-   `dev` to `stable`.
+   it a DOI. If TagBot cannot create the release, create it by hand from the
+   tag it pushed (select the existing tag; do not make a new one); Zenodo
+   archives a published release either way.
+8. In a follow-up pull request: add the DOI of this version to `CITATION.cff`
+   (`doi:`) and to the README "Citing" section (once Zenodo has issued it;
+   never guess one), and check that the Zenodo record shows the authors, ORCID
+   and license of `CITATION.cff`. The record's page also gives the DOI for all
+   versions, which does not change.
 
 A registered version cannot be changed or reused. If a release is wrong, fix
 it on `master` and release the next patch version.

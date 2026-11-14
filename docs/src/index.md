@@ -20,7 +20,7 @@ p < 1/`trials`.
 
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/jerome-white/RandomizedTukeyHSD.jl")
+Pkg.add("RandomizedTukeyHSD")
 ```
 
 The library needs Julia 1.10 or newer and depends only on `CommonSolve`,

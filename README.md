@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/jerome-white/RandomizedTukeyHSD.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/jerome-white/RandomizedTukeyHSD.jl/actions/workflows/CI.yml)
 [![Documentation](https://github.com/jerome-white/RandomizedTukeyHSD.jl/actions/workflows/Documentation.yml/badge.svg)](https://github.com/jerome-white/RandomizedTukeyHSD.jl/actions/workflows/Documentation.yml)
-[![Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://jerome-white.github.io/RandomizedTukeyHSD.jl/dev/)
+[![Docs](https://img.shields.io/badge/docs-stable-blue.svg)](https://jerome-white.github.io/RandomizedTukeyHSD.jl/stable/)
 [![Coverage](https://codecov.io/gh/jerome-white/RandomizedTukeyHSD.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/jerome-white/RandomizedTukeyHSD.jl)
 
 A Julia implementation of the randomized Tukey HSD test for comparing
@@ -25,7 +25,7 @@ of 0 means p < 1/`trials`.
 
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/jerome-white/RandomizedTukeyHSD.jl")
+Pkg.add("RandomizedTukeyHSD")
 ```
 
 The library needs Julia 1.10 or newer.
@@ -46,7 +46,7 @@ is a [Tables.jl](https://tables.juliadata.org) table.
 
 ## Documentation
 
-The [documentation](https://jerome-white.github.io/RandomizedTukeyHSD.jl/dev/)
+The [documentation](https://jerome-white.github.io/RandomizedTukeyHSD.jl/stable/)
 has the manual and the reference for every exported name. The manual covers
 passing a table, stepping and watching a run, missing responses, the
 precision of a p-value, threads and reproducibility, and the known
@@ -63,8 +63,11 @@ tests and how to build the documentation.
 ## Citing
 
 To cite the package, use "Cite this repository" on the GitHub page, which
-reads [`CITATION.cff`](CITATION.cff). Please also cite the sources of the
-method:
+reads [`CITATION.cff`](CITATION.cff). Version 0.1.0 is archived on Zenodo
+as [doi:10.5281/zenodo.24220356](https://doi.org/10.5281/zenodo.24220356);
+[doi:10.5281/zenodo.24220355](https://doi.org/10.5281/zenodo.24220355) stands
+for all versions and resolves to the latest. Please also cite the sources of
+the method:
 
 - Carterette, B. A. (2012). Multiple testing in statistical analysis of
   systems-based information retrieval experiments. *ACM Transactions on
