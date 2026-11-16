@@ -3,7 +3,7 @@ Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 RandomizedTukeyHSD = "4a942d2e-43ad-4dde-8fef-c59cc3eb0421"
 
 [sources]
-RandomizedTukeyHSD = {path = "/Users/jerome/Documents/git/RandomizedTukeyHSD.jl"}
+RandomizedTukeyHSD = {path = ".."}
 
 [compat]
 Documenter = "1"
