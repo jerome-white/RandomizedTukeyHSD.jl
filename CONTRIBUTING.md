@@ -242,7 +242,10 @@ the minor number may break the interface).
 1. `NEWS.md`: name the section with the version and the date,
    `## X.Y.Z (YYYY-MM-DD)`, and check that it lists every user-visible
    change since the last release.
-2. `Project.toml`: `version = "X.Y.Z"`.
+2. `Project.toml`: `version = "X.Y.Z"`. If the minor number of a `0.x`
+   version changes (or the major number later), also the bound on the
+   package in `docs/Project.toml`, which otherwise excludes the new version
+   and fails the Documentation workflow.
 3. `CITATION.cff`: `version: X.Y.Z` and `date-released: YYYY-MM-DD`. These
    three versions and the two dates must be equal; they are changed together
    or not at all. Also delete the `doi:` line: it is the DOI of the previous
