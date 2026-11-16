@@ -56,12 +56,40 @@ function _pairs(n)
     return pairs
 end
 
-# The random stream of trial `i`: a generator seeded with `base + i`. Seeding
-# goes through a cryptographic hash (see `?Random.seed!`), so neighbouring
-# seeds give unrelated streams, and a stream depends on `base` and `i` alone,
-# not on how trials are cut into chunks.
+# Output `n` (1, 2, ...) of the SplitMix64 generator seeded with `seed`
+# (Steele, Lea and Flood, "Fast Splittable Pseudorandom Number Generators",
+# 2014, with the constants of Vigna's `splitmix64.c`). The generator adds a
+# constant to a counter and scrambles the counter, so an output is computed
+# from its number, without the outputs before it.
+function _splitmix64(seed::UInt64, n::UInt64)
+    z = seed + n * 0x9e3779b97f4a7c15
+    z = xor(z, z >> 30) * 0xbf58476d1ce4e5b9
+    z = xor(z, z >> 27) * 0x94d049bb133111eb
+
+    return xor(z, z >> 31)
+end
+
+# The random stream of trial `i` (1, 2, ...): a `Xoshiro` whose state, four
+# 64-bit numbers, is outputs `4i - 3` to `4i` of the SplitMix64 generator
+# seeded with `base`. Filling the state from SplitMix64 is what the authors
+# of xoshiro recommend for a 64-bit seed; here one SplitMix64 generator
+# fills the states of all the trials, four numbers each. So a stream
+# depends on `base` and `i` alone, not on how trials are cut into chunks,
+# and no two trials of a run share a number of that generator.
+#
+# The state is made here, and not by Julia's seeding (`Xoshiro(seed)`),
+# for speed: Julia hashes the seed, which took more than half of a small
+# trial. It also fixes the state by this function and not by the version of
+# Julia.
 function _stream(base::UInt64, i)
-    return Xoshiro(base + UInt64(i))
+    n = 4 * (UInt64(i) - 1)
+
+    return Xoshiro(
+        _splitmix64(base, n + 1),
+        _splitmix64(base, n + 2),
+        _splitmix64(base, n + 3),
+        _splitmix64(base, n + 4),
+    )
 end
 
 # The mean of each row of `data` (treatments x blocks), adding the blocks
