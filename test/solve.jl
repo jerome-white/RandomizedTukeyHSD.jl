@@ -202,6 +202,50 @@ end
     end
 end
 
+# The buffers of a trial are made once, in `init`, and each task of a step
+# uses its own (issue #97).
+@testset "the scratch space of a run" begin
+    # What a trial allocates is its random stream, a few hundred bytes. A
+    # matrix made for every chunk of 64 trials would add 5000 bytes a trial
+    # here (two 100 x 200 matrices of 8-byte numbers, over 64).
+    @testset "a trial allocates no matrix" begin
+        problem = RandomizedTukeyProblem(rand(Xoshiro(97), 200, 100))
+        allocated(n) = @allocated solve(problem, FixedTrials(n);
+                                        rng=Xoshiro(1))
+        allocated(64)
+
+        per_trial = (allocated(1280) - allocated(640)) / 640
+        @test per_trial < 1500
+    end
+
+    # Steps reuse the scratch space of the steps before, and a step of one
+    # chunk uses one task: the counts are those of a run made in one step.
+    @testset "steps of any size give the counts of one step" begin
+        problem = RandomizedTukeyProblem(rand(Xoshiro(98), 30, 6))
+        whole = init(problem, FixedTrials(1000); rng=Xoshiro(3))
+        step!(whole, 16)
+
+        pieces = init(problem, FixedTrials(1000); rng=Xoshiro(3))
+        for nchunks in (1, 1, 2, 5, 7)
+            step!(pieces, nchunks)
+        end
+
+        @test trials(pieces) == trials(whole) == 1000
+        @test pieces.exceeding == whole.exceeding
+    end
+
+    # The responses are kept as 64-bit floats, whatever they arrive as.
+    @testset "integer responses" begin
+        responses = rand(Xoshiro(99), 0:9, 12, 4)
+        asis = solve(RandomizedTukeyProblem(responses), FixedTrials(500);
+                     rng=Xoshiro(4))
+        floats = solve(RandomizedTukeyProblem(Float64.(responses)),
+                       FixedTrials(500); rng=Xoshiro(4))
+
+        @test asis == floats
+    end
+end
+
 @testset "the CommonSolve verbs are re-exported" begin
     @test RandomizedTukeyHSD.init === CommonSolve.init
     @test RandomizedTukeyHSD.solve === CommonSolve.solve
