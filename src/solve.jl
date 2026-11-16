@@ -21,6 +21,16 @@ struct FixedTrials
     end
 end
 
+# The scratch space of one task: the matrix it shuffles (treatments x
+# blocks), the treatment means of a trial, the ranges of a chunk of trials,
+# and the task's counts for every pair of treatments.
+struct _Workspace
+    data::Matrix{Float64}
+    means::Vector{Float64}
+    ranges::Vector{Float64}
+    counts::Vector{Int}
+end
+
 """
     RandomizedTukeyRun
 
@@ -32,7 +42,8 @@ trials so far have shown, so that nothing but counts is stored: for every
 pair of treatments, the number of trials whose range reached the pair's
 observed absolute difference in means. [`trials`](@ref) says how many
 trials that is out of, and [`pvalues`](@ref) turns the counts into
-[`MonteCarloPValue`](@ref)s.
+[`MonteCarloPValue`](@ref)s. A run also keeps the scratch space the trials
+are shuffled in, one for every thread, made once by `init`.
 
 Every trial has its own random stream, which depends on a base seed drawn
 from the generator when the run is made and on the number of the trial. So
@@ -49,6 +60,8 @@ mutable struct RandomizedTukeyRun{
     base::UInt64
     monitor::M
     interval::Int
+    transposed::Matrix{Float64}
+    workspaces::Vector{_Workspace}
     pairs::Vector{Tuple{Int, Int}}
     means::Vector{Float64}
     observed::Vector{Float64}
@@ -95,8 +108,8 @@ function _default_every(monitor, rule)
     return cld(rule.trials, 100)
 end
 
-# `chunk` is the number of trials per task. It only schedules the work: the
-# results do not depend on it.
+# `chunk` is the number of trials a task takes at a time. It only schedules
+# the work: the results do not depend on it.
 function _init(problem, rule::FixedTrials, rng, chunk=64;
                monitor=NoMonitor(), every=nothing)
     if every !== nothing && every <= 0
@@ -106,14 +119,23 @@ function _init(problem, rule::FixedTrials, rng, chunk=64;
         every = _default_every(monitor, rule)
     end
 
-    responses = problem.responses
-    means = Vector{Float64}(undef, size(responses, 2))
-    means = _row_means!(means, transpose(responses))
+    # blocks in columns, so that a trial shuffles and adds along memory
+    transposed = Matrix{Float64}(transpose(problem.responses))
+    means = Vector{Float64}(undef, size(transposed, 1))
+    means = _row_means!(means, transposed)
     pairs = _pairs(length(means))
 
     observed = Vector{Float64}(undef, length(pairs))
     for (p, (j, k)) in enumerate(pairs)
         observed[p] = abs(means[j] - means[k])
+    end
+
+    # one for every task `step!` can start at a time
+    workspaces = map(1:nthreads()) do _
+        _Workspace(similar(transposed),
+                   Vector{Float64}(undef, length(means)),
+                   Vector{Float64}(undef, chunk),
+                   Vector{Int}(undef, length(pairs)))
     end
 
     base = rand(rng, UInt64)
@@ -127,6 +149,8 @@ function _init(problem, rule::FixedTrials, rng, chunk=64;
         base,
         monitor,
         cld(every, chunk),
+        transposed,
+        workspaces,
         pairs,
         means,
         observed,
@@ -182,24 +206,33 @@ function _chunk_trials(run, c)
     return last - first + 1
 end
 
-# Run chunk `c` and add to `exceeding`, for every pair, the number of its
-# trials whose range reached the pair's observed difference.
-function _count_chunk!(exceeding, run, c, lck)
-    ranges = Vector{Float64}(undef, _chunk_trials(run, c))
-    first = (c - 1) * run.chunk + 1
-    _trials!(ranges, run.problem.responses, run.base, first)
-    sort!(ranges)
+# Run chunks in `workspace` until none is left: `next` is the number of the
+# next chunk to run, shared by the tasks of a step, and `last` the last
+# chunk of the step. Returns the counts of the workspace: for every pair,
+# the number of trials of those chunks whose range reached the pair's
+# observed difference.
+function _count_chunks!(workspace, run, next, last)
+    counts = fill!(workspace.counts, 0)
 
-    counts = Vector{Int}(undef, length(run.observed))
-    for (p, difference) in enumerate(run.observed)
-        counts[p] = length(ranges) - searchsortedfirst(ranges, difference) + 1
+    while true
+        c = atomic_add!(next, 1)
+        if c > last
+            break
+        end
+
+        ranges = view(workspace.ranges, 1:_chunk_trials(run, c))
+        first = (c - 1) * run.chunk + 1
+        _trials!(ranges, workspace.data, workspace.means, run.transposed,
+                 run.base, first)
+        sort!(ranges)
+
+        for (p, difference) in enumerate(run.observed)
+            reached = searchsortedfirst(ranges, difference)
+            counts[p] += length(ranges) - reached + 1
+        end
     end
 
-    lock(lck) do
-        exceeding .+= counts
-    end
-
-    return nothing
+    return counts
 end
 
 """
@@ -208,8 +241,11 @@ end
 Advance `run` by `nchunks` chunks of trials (64 trials each, but for the
 last chunk of the rule), in parallel on the available threads. Returns `run`.
 
-The counts do not depend on the order the chunks finish in, so they do not
-depend on the number of threads either: adding whole numbers is exact.
+A step starts one task for every thread (fewer if it has fewer chunks), and
+each task takes the next chunk not yet taken until none is left. The counts
+do not depend on which task runs a chunk nor on the order the chunks finish
+in, so they do not depend on the number of threads either: adding whole
+numbers is exact.
 
 Throws an `ArgumentError` if `nchunks` is not positive or is more than the
 rule has left.
@@ -226,14 +262,15 @@ function CommonSolve.step!(run::RandomizedTukeyRun, nchunks::Integer=1)
 
     first = run.chunks + 1
     last = run.chunks + nchunks
-    lck = ReentrantLock()
-    exceeding = zeros(Int, length(run.exceeding))
-
-    @sync for c in first:last
-        @spawn _count_chunk!(exceeding, run, c, lck)
+    next = Atomic{Int}(first)
+    ntasks = min(length(run.workspaces), nchunks)
+    tasks = map(1:ntasks) do w
+        @spawn _count_chunks!(run.workspaces[w], run, next, last)
     end
 
-    run.exceeding .+= exceeding
+    for task in tasks
+        run.exceeding .+= fetch(task)
+    end
     run.chunks = last
     run.trials = min(last * run.chunk, run.rule.trials)
 
