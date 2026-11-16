@@ -6,7 +6,10 @@ particular, so that someone reading an old issue or pull request can find
 what a term became. The numbers are issues and pull requests of the
 repository.
 
-## Unreleased
+## 0.2.0 (2026-11-16)
+
+The p-values for a fixed generator state differ from those of 0.1.0, which
+is why the minor number changes. The interface is unchanged.
 
 ### Changed: the package's own shuffle (#95, #96)
 
@@ -53,6 +56,10 @@ trials, or a small `every`, left threads idle: with the default checkpoints,
 as long with a monitor as without, and now take 1.3 times as long. The
 p-values, the checkpoints and the interface are unchanged, and so is a run
 without a monitor.
+
+A monitor still costs time on many threads, because the threads stop at
+every checkpoint; "Watching a run" in the documentation now says by how
+much and what to do about it (#107).
 
 ## 0.1.0 (2026-11-11)
 

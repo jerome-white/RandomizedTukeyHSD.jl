@@ -3,9 +3,8 @@ message: >-
   If you use this software, please cite it using the metadata in this file.
   Please also cite the sources of the method, listed under references.
 title: RandomizedTukeyHSD.jl
-version: 0.1.0
-date-released: 2026-11-11
-doi: "10.5281/zenodo.24220356"
+version: 0.2.0
+date-released: 2026-11-16
 identifiers:
   - type: doi
     value: "10.5281/zenodo.24220355"
