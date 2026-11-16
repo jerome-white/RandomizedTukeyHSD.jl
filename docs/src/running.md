@@ -58,6 +58,16 @@ uncertainty) and `progress`. `every` is the number of trials between
 checkpoints, rounded up to whole chunks of 64, and defaults to 1% of the
 trials.
 
+A monitor costs time on many threads. The threads stop at every checkpoint
+and start again after it, so the closer the checkpoints, the more is lost.
+In the runs timed for pull request #106 (20 000 trials on ten threads, 100
+blocks x 100 treatments and 700 x 50), a run with the default checkpoints
+took 1.25 to 1.45 times as long as the same run without a monitor, and 1.5
+to 2.1 times as long with `every=64`. On four threads the default
+checkpoints added 3 to 8%, and on one thread 1% or less. If the time
+matters, pass a larger `every` or leave the monitor out: the p-values are
+the same either way.
+
 To send the numbers somewhere else, write a monitor: a type with a method of
 [`emit`](@ref), called at every checkpoint with a [`Checkpoint`](@ref)
 (`trials`, `planned`, `pvalues`, `done`).
