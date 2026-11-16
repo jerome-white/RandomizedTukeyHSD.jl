@@ -81,11 +81,14 @@ from `docs/`: the pages are in `docs/src/`, the configuration in
 `docs/make.jl`. To build it:
 
 ```bash
-julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+julia --project=docs -e 'using Pkg; Pkg.instantiate()'
 julia --project=docs docs/make.jl
 ```
 
-and open `docs/build/index.html`. The build fails on a doctest that does not
+and open `docs/build/index.html`. The `docs` environment needs Julia 1.11
+or newer, because `docs/Project.toml` points at the library with a
+`[sources]` path entry, which also means the build uses the library as it
+is in your checkout. The build fails on a doctest that does not
 match, a link that does not resolve, and an exported name without a
 docstring (`checkdocs = :exports`), and CI runs the same build on every pull
 request. So:
