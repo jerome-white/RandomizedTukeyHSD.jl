@@ -241,7 +241,9 @@ the minor number may break the interface).
 
 1. `NEWS.md`: name the section with the version and the date,
    `## X.Y.Z (YYYY-MM-DD)`, and check that it lists every user-visible
-   change since the last release.
+   change since the last release. The date is the day the release pull
+   request is prepared. The registry merges later and reads neither this
+   date nor the one of step 3.
 2. `Project.toml`: `version = "X.Y.Z"`. If the minor number of a `0.x`
    version changes (or the major number later), also the bound on the
    package in `docs/Project.toml`, which otherwise excludes the new version
@@ -259,12 +261,31 @@ the minor number may break the interface).
 5. Comment `@JuliaRegistrator register` on the merge commit on GitHub (or in
    an issue). The JuliaRegistrator GitHub app opens a pull request on the
    [General registry](https://github.com/JuliaRegistries/General) with the
-   version, from the `Project.toml` of that commit.
+   version, from the `Project.toml` of that commit. If the version breaks
+   something (for a `0.x` version, a change of the minor number), write
+   release notes under the comment, or the registry holds the version back.
+   They must contain the word "breaking" or "changelog":
+
+   ```
+   @JuliaRegistrator register
+
+   Release notes:
+
+   ## Breaking changes
+
+   - What changed, and what a user of the last version has to do.
+
+   See the changelog in NEWS.md for details.
+   ```
+
+   TagBot puts the same notes in the GitHub release.
 6. The registry's AutoMerge checks it: compat bounds, the package name, a
    license, that the package loads. A new package waits three days before it
    merges; a new version of a registered package waits less. If a check
    fails, the pull request says why; fix it on `master` and comment
-   `@JuliaRegistrator register` again.
+   `@JuliaRegistrator register` again, on the new commit. That updates the
+   same registry pull request to the new commit and the new notes, and can
+   be done for any reason until the registry merges.
 
 **After the registry merges**
 
