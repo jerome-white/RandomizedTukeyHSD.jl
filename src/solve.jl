@@ -132,10 +132,12 @@ function _init(problem, rule::FixedTrials, rng, chunk=64;
 
     # one for every task `step!` can start at a time
     workspaces = map(1:nthreads()) do _
-        _Workspace(similar(transposed),
-                   Vector{Float64}(undef, length(means)),
-                   Vector{Float64}(undef, chunk),
-                   Vector{Int}(undef, length(pairs)))
+        _Workspace(
+            similar(transposed),
+            Vector{Float64}(undef, length(means)),
+            Vector{Float64}(undef, chunk),
+            Vector{Int}(undef, length(pairs)),
+        )
     end
 
     base = rand(rng, UInt64)
@@ -222,8 +224,14 @@ function _count_chunks!(workspace, run, next, last)
 
         ranges = view(workspace.ranges, 1:_chunk_trials(run, c))
         first = (c - 1) * run.chunk + 1
-        _trials!(ranges, workspace.data, workspace.means, run.transposed,
-                 run.base, first)
+        _trials!(
+            ranges,
+            workspace.data,
+            workspace.means,
+            run.transposed,
+            run.base,
+            first,
+        )
         sort!(ranges)
 
         for (p, difference) in enumerate(run.observed)
