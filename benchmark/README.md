@@ -22,6 +22,19 @@ on seeded random responses. It prints the Julia version, CPU, thread
 configuration and load average first, so a result can be tied to its
 environment.
 
+To see where the time of a trial goes, `benchmark/parts.jl` times the parts
+of one trial separately (seeding the trial's stream, copying the responses,
+shuffling the blocks, the means, their range) beside `solve` as a whole, on
+seven problem sizes. It takes a few seconds:
+
+```bash
+julia --project=benchmark -t 1 benchmark/parts.jl
+```
+
+It is the place to look before trying to make a trial faster: #95 used
+these numbers to find that the shuffle was about 80% of a trial, which led to
+the package's own shuffle (#96).
+
 ## Baseline
 
 Code: `92dd849` (the library as first extracted in #2). Julia 1.13.2 on an
