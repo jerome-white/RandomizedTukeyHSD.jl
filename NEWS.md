@@ -25,8 +25,12 @@ Julia 1.10, the smallest problem gaining least.
   fixed generator state do not depend on the number of threads, on the
   chunks or on how Julia is started.
 - The arrangement a trial makes of its random stream no longer depends on
-  the Julia version. Seeding the stream is still Julia's, so a new Julia can
-  still change the p-values for a seed.
+  the Julia version. With 0.1.0 it did: Julia's `shuffle!` was rewritten
+  between Julia 1.10 and 1.13 and arranges the same stream differently
+  (`shuffle!(Xoshiro(1), collect(1:10))` starts with 10 on Julia 1.10.12 and
+  with 2 on 1.13.2), so 0.1.0 gives different p-values for the same seed on
+  those two versions. Seeding the stream is still Julia's, so a new Julia
+  can still change the p-values for a seed.
 - The interface is unchanged.
 
 ## 0.1.0 (2026-11-11)
