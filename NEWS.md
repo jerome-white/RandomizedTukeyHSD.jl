@@ -43,6 +43,17 @@ left. The p-values are the same to the last bit. A run allocates far less:
 allocate 9, most of what is left being the trials' random streams. The time
 of a run is unchanged on a quiet machine.
 
+### Changed: a short step has work for every thread (#95, #105)
+
+A task takes a chunk of 64 trials at a time, or less when the step has too
+few trials to give every thread a chunk. Before, a step of 4 chunks had work
+for 4 tasks on any number of threads, so a run with a monitor and few
+trials, or a small `every`, left threads idle: with the default checkpoints,
+20 000 trials of 700 blocks x 50 treatments on ten threads took 1.9 times
+as long with a monitor as without, and now take 1.3 times as long. The
+p-values, the checkpoints and the interface are unchanged, and so is a run
+without a monitor.
+
 ## 0.1.0 (2026-11-11)
 
 ### Added

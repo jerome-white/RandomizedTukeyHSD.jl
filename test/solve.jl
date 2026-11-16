@@ -234,6 +234,25 @@ end
         @test pieces.exceeding == whole.exceeding
     end
 
+    # A step with too few trials to give every thread a chunk is shared in
+    # smaller pieces (issue #105), and the last chunk of a rule can have
+    # fewer trials than there are threads. The counts are those of the same
+    # trials taken as one chunk of 67.
+    @testset "a short step gives the counts of a long one" begin
+        problem = RandomizedTukeyProblem(rand(Xoshiro(105), 30, 6))
+        rule = FixedTrials(67)    # a chunk of 64 and one of 3
+
+        short = init(problem, rule; rng=Xoshiro(5))
+        step!(short)
+        step!(short)
+
+        long = RandomizedTukeyHSD._init(problem, rule, Xoshiro(5), 67)
+        step!(long)
+
+        @test trials(short) == trials(long) == 67
+        @test short.exceeding == long.exceeding
+    end
+
     # The responses are kept as 64-bit floats, whatever they arrive as.
     @testset "integer responses" begin
         responses = rand(Xoshiro(99), 0:9, 12, 4)

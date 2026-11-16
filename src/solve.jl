@@ -22,8 +22,8 @@ struct FixedTrials
 end
 
 # The scratch space of one task: the matrix it shuffles (treatments x
-# blocks), the treatment means of a trial, the ranges of a chunk of trials,
-# and the task's counts for every pair of treatments.
+# blocks), the treatment means of a trial, the ranges of up to a chunk of
+# trials, and the task's counts for every pair of treatments.
 struct _Workspace
     data::Matrix{Float64}
     means::Vector{Float64}
@@ -108,8 +108,9 @@ function _default_every(monitor, rule)
     return cld(rule.trials, 100)
 end
 
-# `chunk` is the number of trials a task takes at a time. It only schedules
-# the work: the results do not depend on it.
+# `chunk` is the number of trials of a unit of `step!`, and the most a task
+# takes at a time. It only schedules the work: the results do not depend on
+# it.
 function _init(problem, rule::FixedTrials, rng, chunk=64;
                monitor=NoMonitor(), every=nothing)
     if every !== nothing && every <= 0
@@ -199,31 +200,23 @@ function _planned(run)
     return cld(run.rule.trials, run.chunk)
 end
 
-# Number of trials of chunk `c`: all of them are `run.chunk` but the last.
-function _chunk_trials(run, c)
-    planned = run.rule.trials
-    first = (c - 1) * run.chunk + 1
-    last = min(c * run.chunk, planned)
-
-    return last - first + 1
-end
-
-# Run chunks in `workspace` until none is left: `next` is the number of the
-# next chunk to run, shared by the tasks of a step, and `last` the last
-# chunk of the step. Returns the counts of the workspace: for every pair,
-# the number of trials of those chunks whose range reached the pair's
-# observed difference.
-function _count_chunks!(workspace, run, next, last)
+# Run pieces of the trials of a step in `workspace` until none is left:
+# `next` is the first trial of the next piece to run, shared by the tasks
+# of the step, `piece` the number of trials of a piece and `to` the last
+# trial of the step. Returns the counts of the workspace: for every pair,
+# the number of those trials whose range reached the pair's observed
+# difference.
+function _count_pieces!(workspace, run, next, piece, to)
     counts = fill!(workspace.counts, 0)
 
     while true
-        c = atomic_add!(next, 1)
-        if c > last
+        first = atomic_add!(next, piece)
+        if first > to
             break
         end
 
-        ranges = view(workspace.ranges, 1:_chunk_trials(run, c))
-        first = (c - 1) * run.chunk + 1
+        last = min(first + piece - 1, to)
+        ranges = view(workspace.ranges, 1:(last - first + 1))
         _trials!(
             ranges,
             workspace.data,
@@ -249,11 +242,13 @@ end
 Advance `run` by `nchunks` chunks of trials (64 trials each, but for the
 last chunk of the rule), in parallel on the available threads. Returns `run`.
 
-A step starts one task for every thread (fewer if it has fewer chunks), and
-each task takes the next chunk not yet taken until none is left. The counts
-do not depend on which task runs a chunk nor on the order the chunks finish
-in, so they do not depend on the number of threads either: adding whole
-numbers is exact.
+A step starts one task for every thread (fewer if it has fewer trials), and
+each task takes the next trials not yet taken until none is left: a chunk at
+a time, or less when the step has too few trials to give every thread a
+chunk, so that a short step has work for every thread too. Every trial has
+its own stream and adding whole numbers is exact, so the counts do not
+depend on which task runs a trial nor on the order the tasks finish in, and
+so not on the number of threads either.
 
 Throws an `ArgumentError` if `nchunks` is not positive or is more than the
 rule has left.
@@ -268,19 +263,24 @@ function CommonSolve.step!(run::RandomizedTukeyRun, nchunks::Integer=1)
         throw(ArgumentError(msg))
     end
 
-    first = run.chunks + 1
     last = run.chunks + nchunks
+    first = run.chunks * run.chunk + 1
+    to = min(last * run.chunk, run.rule.trials)
+
+    # what a task takes at a time: an equal share of the step's trials for
+    # every workspace, and no more than a chunk
+    piece = min(run.chunk, cld(to - first + 1, length(run.workspaces)))
     next = Atomic{Int}(first)
-    ntasks = min(length(run.workspaces), nchunks)
+    ntasks = min(length(run.workspaces), cld(to - first + 1, piece))
     tasks = map(1:ntasks) do w
-        @spawn _count_chunks!(run.workspaces[w], run, next, last)
+        @spawn _count_pieces!(run.workspaces[w], run, next, piece, to)
     end
 
     for task in tasks
         run.exceeding .+= fetch(task)
     end
     run.chunks = last
-    run.trials = min(last * run.chunk, run.rule.trials)
+    run.trials = to
 
     return run
 end
