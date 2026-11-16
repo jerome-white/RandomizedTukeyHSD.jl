@@ -323,6 +323,83 @@ call at 100 × 100 and B = 10 000 fall from 9938 to 37.
 | 100 | 100 | 1000 | 7.54 | 4.01 | 1.88x |
 | 100 | 100 | 10000 | 6.53 | 3.84 | 1.70x |
 
+## After #96 and #97: the package's own shuffle, buffers made once
+
+The state of the library after the changes that came out of #95: each block
+is shuffled by the package's own shuffle (#96), the range of the means is
+found in one pass (#98), and a run makes its buffers once and starts one task
+per thread (#97). Code: `729a91a`, the branch of #97. Julia 1.13.2 on the
+same Apple M4; one run at each thread count, with a load average of
+1.44 to 1.8. The tables are as the script prints them.
+
+These runs have no "before" measured beside them, so they are a record of
+where the library stands, not a comparison. The comparisons, each measured
+back to back, are in the pull requests: #102 for the shuffle (8 to 46% less
+time on one thread) and #104 for the buffers (time unchanged at one and four
+threads; 188 MiB allocated against 9 for 20 000 trials of 700 blocks x 50
+treatments).
+
+Against the "after" column of the section above, which is an older state of
+the library measured on another day, a trial at one thread now takes 16.37 us
+at 100 treatments x 100 blocks where it took 25.00, and 0.63 us at 5 x 50
+where it took 0.58. Between the two lie the changes named here and others
+that cost time: a random stream for every trial (#64) and the fixed order of
+the additions (#74).
+
+Memory is now about 430 bytes per trial, the trial's random stream, and a
+few hundred bytes per pair of treatments for the results: 4.3 MiB at 10 000
+trials of 5 treatments, 5.3 MiB at 100 treatments x 100 blocks.
+
+### 1 thread (`-t 1`)
+
+| treatments | blocks | trials | median (ms) | us/trial | min (ms) | MiB | allocs |
+|--:|--:|--:|--:|--:|--:|--:|--:|
+| 5 | 50 | 1000 | 0.6 | 0.64 | 0.6 | 0.4 | 9073 |
+| 5 | 50 | 10000 | 6.3 | 0.63 | 6.2 | 4.3 | 90073 |
+| 5 | 100 | 1000 | 1.1 | 1.10 | 1.1 | 0.4 | 9075 |
+| 5 | 100 | 10000 | 10.9 | 1.09 | 10.8 | 4.3 | 90075 |
+| 10 | 50 | 1000 | 1.1 | 1.09 | 1.1 | 0.4 | 9216 |
+| 10 | 50 | 10000 | 10.7 | 1.07 | 10.7 | 4.3 | 90216 |
+| 10 | 100 | 1000 | 2.0 | 2.01 | 2.0 | 0.5 | 9216 |
+| 10 | 100 | 10000 | 20.0 | 2.00 | 19.9 | 4.3 | 90216 |
+| 20 | 50 | 1000 | 1.9 | 1.90 | 1.9 | 0.5 | 9797 |
+| 20 | 50 | 10000 | 18.7 | 1.87 | 18.4 | 4.3 | 90797 |
+| 20 | 100 | 1000 | 3.6 | 3.65 | 3.6 | 0.5 | 9797 |
+| 20 | 100 | 10000 | 36.3 | 3.63 | 36.3 | 4.3 | 90797 |
+| 50 | 50 | 1000 | 4.2 | 4.16 | 4.1 | 0.7 | 13940 |
+| 50 | 50 | 10000 | 41.0 | 4.10 | 40.9 | 4.5 | 94940 |
+| 50 | 100 | 1000 | 8.2 | 8.22 | 8.1 | 0.7 | 13940 |
+| 50 | 100 | 10000 | 81.7 | 8.17 | 80.7 | 4.6 | 94940 |
+| 100 | 50 | 1000 | 8.3 | 8.26 | 8.2 | 1.4 | 28840 |
+| 100 | 50 | 10000 | 80.1 | 8.01 | 79.8 | 5.2 | 109840 |
+| 100 | 100 | 1000 | 16.7 | 16.72 | 16.6 | 1.5 | 28840 |
+| 100 | 100 | 10000 | 163.7 | 16.37 | 163.5 | 5.3 | 109840 |
+
+### 4 threads (`-t 4`)
+
+| treatments | blocks | trials | median (ms) | us/trial | min (ms) | MiB | allocs |
+|--:|--:|--:|--:|--:|--:|--:|--:|
+| 5 | 50 | 1000 | 0.2 | 0.19 | 0.2 | 0.4 | 9115 |
+| 5 | 50 | 10000 | 1.7 | 0.17 | 1.7 | 4.3 | 90115 |
+| 5 | 100 | 1000 | 0.3 | 0.31 | 0.3 | 0.5 | 9120 |
+| 5 | 100 | 10000 | 2.9 | 0.29 | 2.9 | 4.3 | 90120 |
+| 10 | 50 | 1000 | 0.3 | 0.31 | 0.3 | 0.5 | 9261 |
+| 10 | 50 | 10000 | 2.9 | 0.29 | 2.8 | 4.3 | 90261 |
+| 10 | 100 | 1000 | 0.6 | 0.56 | 0.6 | 0.5 | 9261 |
+| 10 | 100 | 10000 | 5.3 | 0.53 | 5.3 | 4.3 | 90261 |
+| 20 | 50 | 1000 | 0.5 | 0.54 | 0.5 | 0.5 | 9842 |
+| 20 | 50 | 10000 | 5.0 | 0.50 | 4.9 | 4.4 | 90842 |
+| 20 | 100 | 1000 | 1.0 | 1.02 | 1.0 | 0.5 | 9842 |
+| 20 | 100 | 10000 | 9.7 | 0.97 | 9.5 | 4.4 | 90842 |
+| 50 | 50 | 1000 | 1.2 | 1.21 | 1.2 | 0.7 | 13988 |
+| 50 | 50 | 10000 | 11.3 | 1.13 | 11.2 | 4.6 | 94988 |
+| 50 | 100 | 1000 | 2.3 | 2.34 | 2.3 | 1.0 | 13988 |
+| 50 | 100 | 10000 | 22.3 | 2.23 | 22.3 | 4.8 | 94988 |
+| 100 | 50 | 1000 | 2.5 | 2.53 | 2.5 | 1.8 | 28888 |
+| 100 | 50 | 10000 | 22.3 | 2.23 | 22.0 | 5.6 | 109888 |
+| 100 | 100 | 1000 | 5.0 | 4.95 | 4.9 | 1.9 | 28888 |
+| 100 | 100 | 10000 | 45.9 | 4.59 | 45.6 | 5.8 | 109888 |
+
 ## Caveats
 
 - One machine, one Julia version, uniform random scores.
