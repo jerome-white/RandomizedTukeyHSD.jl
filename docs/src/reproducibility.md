@@ -28,9 +28,10 @@ What this does and does not promise:
   stream is the package's own shuffle, which is the same in every Julia
   version. The stream itself is Julia's (`Xoshiro` and its seeding), which
   is not guaranteed to stay the same across Julia versions.
-- The chunk size (64 trials per task) only schedules the work and is not part
-  of the result. The number of random numbers a trial draws and the way a
-  trial's stream is derived from the seed are, so they may change between
+- The chunk size (64 trials, what a task takes at a time) only schedules the
+  work and is not part of the result. The number of random numbers a trial
+  draws and the way a trial's stream is derived from the seed are, so they
+  may change between
   package versions. Record the package version with the seed. They have
   changed once since the first release: 0.1.0 shuffled with Julia's
   `shuffle!`, so p-values recorded with 0.1.0 are reproduced with 0.1.0 and

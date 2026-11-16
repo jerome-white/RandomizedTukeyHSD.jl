@@ -82,17 +82,13 @@ function _row_means!(means, data)
 end
 
 # Fill `ranges` with the range of the treatment means of that many trials,
-# which are trials `first`, `first + 1`, ... of the run. Every trial shuffles
-# the responses as observed, not the arrangement the trial before left, so
-# that a trial depends on its own stream alone.
-function _trials!(ranges, responses, base, first)
-    (nblocks, ntreatments) = size(responses)
-
-    observed = Matrix{Float64}(undef, ntreatments, nblocks)
-    observed .= transpose(responses)
-    data = similar(observed)
-    means = Vector{Float64}(undef, ntreatments)
-
+# which are trials `first`, `first + 1`, ... of the run. `observed` holds
+# the responses as observed, treatments x blocks; `data` and `means` are
+# scratch space of the caller, a matrix of that size and a vector of one
+# number per treatment. Every trial shuffles the responses as observed, not
+# the arrangement the trial before left, so that a trial depends on its own
+# stream alone.
+function _trials!(ranges, data, means, observed, base, first)
     for i in eachindex(ranges)
         rng = _stream(base, first + i - 1)
         copyto!(data, observed)

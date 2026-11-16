@@ -33,6 +33,16 @@ Julia 1.10, the smallest problem gaining least.
   can still change the p-values for a seed.
 - The interface is unchanged.
 
+### Changed: a run makes its buffers once (#95, #97)
+
+The matrices a trial shuffles are made once, by `init`, one for every
+thread, where they were made again for every chunk of 64 trials. A step
+starts one task for every thread, and each task takes chunks until none is
+left. The p-values are the same to the last bit. A run allocates far less:
+20 000 trials of 700 blocks x 50 treatments allocated 188 MiB and now
+allocate 9, most of what is left being the trials' random streams. The time
+of a run is unchanged on a quiet machine.
+
 ## 0.1.0 (2026-11-11)
 
 ### Added
