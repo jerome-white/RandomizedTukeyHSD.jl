@@ -67,10 +67,31 @@ end
 # The mean of each row of `data` (treatments x blocks), adding the blocks
 # in order. `sum` and `mean` do not fix the order of the additions, and the
 # observed means and the trial means must round identically.
+#
+# Four treatments are added at a time, and the treatments left over one at
+# a time. A total is a chain of additions, each waiting for the one before;
+# four totals are four chains the processor runs side by side, on four
+# neighbouring values of each block. Every total still adds its own blocks
+# in order, so the means are the same to the last bit as one at a time.
 function _row_means!(means, data)
     (ntreatments, nblocks) = size(data)
+    grouped = ntreatments - ntreatments % 4
 
-    for t in 1:ntreatments
+    for t in 1:4:grouped
+        (total1, total2, total3, total4) = (0.0, 0.0, 0.0, 0.0)
+        for b in 1:nblocks
+            total1 += data[t, b]
+            total2 += data[t + 1, b]
+            total3 += data[t + 2, b]
+            total4 += data[t + 3, b]
+        end
+        means[t] = total1 / nblocks
+        means[t + 1] = total2 / nblocks
+        means[t + 2] = total3 / nblocks
+        means[t + 3] = total4 / nblocks
+    end
+
+    for t in grouped+1:ntreatments
         total = 0.0
         for b in 1:nblocks
             total += data[t, b]
