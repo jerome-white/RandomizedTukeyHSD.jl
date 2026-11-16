@@ -1,10 +1,33 @@
 # Release notes
 
-This is the first release, so every entry below is under 0.1.0 and the
-renames were made without a deprecation period. This file records the
-renames in particular, so that someone reading an old issue or pull request
-can find what a term became. The numbers are issues and pull requests of
-the repository.
+Version 0.1.0 was the first release, so the renames listed under it were
+made without a deprecation period. This file records the renames in
+particular, so that someone reading an old issue or pull request can find
+what a term became. The numbers are issues and pull requests of the
+repository.
+
+## Unreleased
+
+### Changed: the package's own shuffle (#95, #96)
+
+Each trial now shuffles the blocks with a shuffle of the package's own, in
+place of Julia's `shuffle!`. The shuffle is most of a trial, and this one is
+faster: in the runs timed for #96 (one thread, 20 blocks x 3 treatments to
+700 x 50), a run took 8 to 46% less time on Julia 1.13 and 33 to 62% less on
+Julia 1.10, the smallest problem gaining least.
+
+- **The p-values for a fixed generator state changed, once.** The same
+  `rng`, responses and number of trials give different p-values from those
+  of 0.1.0. They are as valid as before (the exact-enumeration and Sakai
+  reference tests pass unchanged) and differ from the earlier ones by Monte
+  Carlo error. To reproduce numbers recorded with 0.1.0, install 0.1.0.
+- Everything else about reproducibility is as it was: the p-values for a
+  fixed generator state do not depend on the number of threads, on the
+  chunks or on how Julia is started.
+- The arrangement a trial makes of its random stream no longer depends on
+  the Julia version. Seeding the stream is still Julia's, so a new Julia can
+  still change the p-values for a seed.
+- The interface is unchanged.
 
 ## 0.1.0 (2026-11-11)
 

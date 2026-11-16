@@ -13,6 +13,8 @@ Besides unit tests, the library is compared with the exact p-values (every
 within-block arrangement enumerated) and with the output of Sakai's own
 implementation, Discpower, on problems small enough to enumerate. See
 [`test/reference/README.md`](https://github.com/jerome-white/RandomizedTukeyHSD.jl/blob/master/test/reference/README.md).
+The shuffle is the package's own, so it is also tested by itself: every
+arrangement of a short vector has to appear equally often.
 
 The [`benchmark/`](https://github.com/jerome-white/RandomizedTukeyHSD.jl/tree/master/benchmark)
 directory holds the benchmark suite, the baseline measured before the
