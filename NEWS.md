@@ -33,6 +33,15 @@ Julia 1.10, the smallest problem gaining least.
   can still change the p-values for a seed.
 - The interface is unchanged.
 
+### Changed: the treatment means are added four at a time (#76, #95)
+
+The means of a trial are added four treatments at a time, each still adding
+its blocks in order. The p-values are the same to the last bit as before
+this change, and a run is faster from 5 treatments up: in the runs timed for
+#76 (one thread, 50 blocks x 5 treatments to 700 x 50), a run took 6 to 21%
+less time on Julia 1.13 and 6 to 19% less on Julia 1.10. At 20 blocks x 3
+treatments the time is unchanged.
+
 ## 0.1.0 (2026-11-11)
 
 ### Added
