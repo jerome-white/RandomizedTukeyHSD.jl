@@ -9,7 +9,8 @@ using Random
     rng = Xoshiro(74)
 
     @testset "$nblocks blocks, $ntreatments treatments" for
-            (nblocks, ntreatments) in ((3, 3), (4, 5), (11, 4), (50, 6))
+            (nblocks, ntreatments) in ((3, 3), (4, 5), (11, 4), (50, 6),
+                                       (7, 1), (5, 2), (9, 8), (6, 13))
         responses = rand(rng, nblocks, ntreatments)
         means = zeros(ntreatments)
 
@@ -17,6 +18,19 @@ using Random
         # arrive as a matrix or as a lazy transpose of the responses
         RandomizedTukeyHSD._row_means!(means, transpose(responses))
         @test means == column_means(responses)
+
+        RandomizedTukeyHSD._row_means!(means, collect(transpose(responses)))
+        @test means == column_means(responses)
+    end
+
+    # The means are added four treatments at a time (issue #76). Responses
+    # of very different sizes make the order of the additions show in the
+    # last bits, for every number of treatments left over by the fours.
+    @testset "$ntreatments treatments of very different sizes" for
+            ntreatments in 1:9
+        responses = rand(rng, 12, ntreatments) .*
+            exp.(20 .* randn(rng, 12, ntreatments))
+        means = zeros(ntreatments)
 
         RandomizedTukeyHSD._row_means!(means, collect(transpose(responses)))
         @test means == column_means(responses)
