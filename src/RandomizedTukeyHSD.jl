@@ -39,6 +39,7 @@ include("problem.jl")
 include("pvalue.jl")
 include("target.jl")
 include("monitor.jl")
+include("shuffle.jl")
 include("solve.jl")
 
 # All pairs (j, k) with j < k, in the order (1,2), (1,3), ..., (n-1,n).
@@ -96,7 +97,7 @@ function _trials!(ranges, responses, base, first)
         rng = _stream(base, first + i - 1)
         copyto!(data, observed)
         for col in eachcol(data)
-            shuffle!(rng, col)
+            _shuffle!(rng, col)
         end
 
         _row_means!(means, data)
