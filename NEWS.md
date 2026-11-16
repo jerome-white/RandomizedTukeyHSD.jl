@@ -29,8 +29,8 @@ Julia 1.10, the smallest problem gaining least.
   between Julia 1.10 and 1.13 and arranges the same stream differently
   (`shuffle!(Xoshiro(1), collect(1:10))` starts with 10 on Julia 1.10.12 and
   with 2 on 1.13.2), so 0.1.0 gives different p-values for the same seed on
-  those two versions. Seeding the stream is still Julia's, so a new Julia
-  can still change the p-values for a seed.
+  those two versions. Seeding a trial's stream became the package's own
+  too (#109, below).
 - The interface is unchanged.
 
 ### Changed: a run makes its buffers once (#95, #97)
@@ -53,6 +53,30 @@ trials, or a small `every`, left threads idle: with the default checkpoints,
 as long with a monitor as without, and now take 1.3 times as long. The
 p-values, the checkpoints and the interface are unchanged, and so is a run
 without a monitor.
+
+### Changed: a trial's stream is seeded with SplitMix64 (#95, #109)
+
+The state of a trial's generator is now made with SplitMix64 from the base
+seed and the number of the trial, in place of Julia's seeding, which hashes
+the seed. That took 0.18 microseconds and 400 bytes of every trial whatever
+the size of the problem, so small problems gain most: in
+`benchmark/randomized_tukey.jl` on one thread, 10 000 trials of 50 blocks x
+5 treatments took 28% less time, 50 x 20 took 10% less and 100 x 100 took
+2% less, and the first two allocated 0.5 MiB where they allocated 4.3.
+
+- **The p-values for a fixed generator state changed** together with those
+  of #96: it is one change from 0.1.0, not a second one for anyone going
+  from one release to the next.
+- A trial still has its own stream, which depends on the base seed and the
+  number of the trial alone, so the p-values do not depend on the number of
+  threads or on the chunks. One SplitMix64 generator, seeded with the base
+  seed, fills the states of all the trials, four numbers each: the way the
+  authors of xoshiro recommend filling a state from a 64-bit seed.
+- The tests compare a trial's stream with SplitMix64 and xoshiro256++
+  written out, and SplitMix64 with its published values. The generator
+  that steps the stream is still Julia's `Xoshiro`, and the base seed is
+  still drawn from the `rng` passed to `init`.
+- The interface is unchanged.
 
 ## 0.1.0 (2026-11-11)
 
