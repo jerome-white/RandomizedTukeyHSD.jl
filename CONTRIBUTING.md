@@ -181,9 +181,10 @@ judge the work, and what is expected of anyone who contributes with AI.
   first 12 commits in this repository (2020-10-13 to 2021-09-15) come
   from that.
 - Since 2026-10-20 (commit `f1d9d51`, "Create the project structure")
-  the work has been done with Claude Code, using Claude Sonnet 5.5
-  (`claude-sonnet-5-5`). The agent turned the script into a Julia
-  package and added what came after: the `init`/`solve`/`step!`
+  the work has been done with Claude Code. The model it runs has
+  changed over time, and each commit names its own (see the
+  `Co-Authored-By:` trailer below). The agent turned the script into a
+  Julia package and added what came after: the `init`/`solve`/`step!`
   interface, monitors, `trials_for`, table input, tests, benchmarks
   and documentation. The maintainer set the direction, the
   architecture, reviewed the work on GitHub, and corrected it where it
