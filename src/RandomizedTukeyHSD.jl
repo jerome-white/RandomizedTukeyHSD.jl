@@ -100,7 +100,8 @@ function _trials!(ranges, responses, base, first)
         end
 
         _row_means!(means, data)
-        ranges[i] = maximum(means) - minimum(means)
+        (low, high) = extrema(means)
+        ranges[i] = high - low
     end
 
     return nothing
