@@ -5,6 +5,7 @@ message: >-
 title: RandomizedTukeyHSD.jl
 version: 0.2.0
 date-released: 2026-11-16
+doi: "10.5281/zenodo.24297203"
 identifiers:
   - type: doi
     value: "10.5281/zenodo.24220355"

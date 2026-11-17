@@ -63,8 +63,10 @@ tests and how to build the documentation.
 ## Citing
 
 To cite the package, use "Cite this repository" on the GitHub page, which
-reads [`CITATION.cff`](CITATION.cff). Version 0.1.0 is archived on Zenodo
-as [doi:10.5281/zenodo.24220356](https://doi.org/10.5281/zenodo.24220356);
+reads [`CITATION.cff`](CITATION.cff). Version 0.2.0 is archived on Zenodo
+as [doi:10.5281/zenodo.24297203](https://doi.org/10.5281/zenodo.24297203) and
+version 0.1.0 as
+[doi:10.5281/zenodo.24220356](https://doi.org/10.5281/zenodo.24220356);
 [doi:10.5281/zenodo.24220355](https://doi.org/10.5281/zenodo.24220355) stands
 for all versions and resolves to the latest. Please also cite the sources of
 the method:
