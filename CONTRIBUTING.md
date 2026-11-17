@@ -279,6 +279,13 @@ the minor number may break the interface).
    ```
 
    TagBot puts the same notes in the GitHub release.
+
+   The bot acts on that phrase wherever it appears in a new comment, issue
+   or issue body, even between backticks. Write it only in the registration
+   comment: in an issue or pull request about a release, say "the register
+   comment". On 2026-11-16 the phrase in the text of an issue (#115)
+   registered 0.2.0 again, without the notes, over the comment that had
+   them.
 6. The registry's AutoMerge checks it: compat bounds, the package name, a
    license, that the package loads. A new package waits three days before it
    merges; a new version of a registered package waits less. If a check
@@ -294,7 +301,10 @@ the minor number may break the interface).
    versioned documentation, and the release is archived by Zenodo, which gives
    it a DOI. If TagBot cannot create the release, create it by hand from the
    tag it pushed (select the existing tag; do not make a new one); Zenodo
-   archives a published release either way.
+   archives a published release either way. TagBot could not create the
+   release of 0.1.0 (403, #91) and created that of 0.2.0; the tagged
+   commit of 0.1.0 added a workflow file and that of 0.2.0 changed none,
+   which may be the difference.
 8. In a follow-up pull request: add the DOI of this version to `CITATION.cff`
    (`doi:`) and to the README "Citing" section (once Zenodo has issued it;
    never guess one), and check that the Zenodo record shows the authors, ORCID
