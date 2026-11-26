@@ -6,6 +6,20 @@ particular, so that someone reading an old issue or pull request can find
 what a term became. The numbers are issues and pull requests of the
 repository.
 
+## Unreleased
+
+### Added: what counts as a block (#125)
+
+- A manual page, "What counts as a block", on data whose rows are not
+  independent blocks: repeated responses for one block and treatment (average
+  them) and blocks sampled together (make the cluster the block, with the
+  sum of its responses divided by the average cluster size, which gives the
+  test that shuffles a cluster as a whole; #121). The glossary defines
+  cluster and stratum.
+- The error for a block and treatment with more than one row in a tidy table
+  now says to average repeated responses and names that page. The error is
+  still thrown: the library does not choose the summary for you.
+
 ## 0.2.0 (2026-11-16)
 
 The p-values for a fixed generator state differ from those of 0.1.0, which

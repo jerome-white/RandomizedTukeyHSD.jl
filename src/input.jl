@@ -58,7 +58,9 @@ function tidy_matrix(blocks, treatments, responses)
 
         if seen[row, col]
             msg = "more than one response for block $(repr(blocks[i])) " *
-                  "and treatment $(repr(treatments[i]))"
+                  "and treatment $(repr(treatments[i])); if these are " *
+                  "repeated responses, average them first (see " *
+                  "\"What counts as a block\" in the manual)"
             throw(ArgumentError(msg))
         end
 
