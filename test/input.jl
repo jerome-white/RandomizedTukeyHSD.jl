@@ -39,6 +39,10 @@ const RT = RandomizedTukeyHSD
         @test_throws r"block \"b1\" and treatment \"A\"" RT.tidy_matrix(
             ["b1", "b1"], ["A", "A"], [1.0, 2.0]
         )
+        # the message names the manual page that says what to do instead
+        @test_throws r"average them first.*\"What counts as a block\"" (
+            RT.tidy_matrix(["b1", "b1"], ["A", "A"], [1.0, 2.0])
+        )
     end
 
     @testset "a matrix built from tidy rows is what the test takes" begin

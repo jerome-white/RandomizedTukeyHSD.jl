@@ -16,6 +16,7 @@ makedocs(;
             "Passing a table" => "tables.md",
             "Stepping and watching a run" => "running.md",
             "Missing responses" => "missing.md",
+            "What counts as a block" => "blocks.md",
             "How precise is a p-value?" => "precision.md",
             "Threads and reproducibility" => "reproducibility.md",
             "Known limitation: floating-point ties" => "ties.md",
