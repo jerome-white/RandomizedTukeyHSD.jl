@@ -43,8 +43,9 @@ solve(problem, rule; rng=Xoshiro(1))
 Wide names the treatments by the column names, as the table gives them
 (`Symbol`s). Tidy names them by the values of the `treatment` column, and takes
 blocks and treatments in the order they first appear. A missing response, or a
-block and treatment with no row, is rejected like a `NaN`. A real matrix takes
-the matrix constructor.
+block and treatment with no row, is rejected like a `NaN`. A block and
+treatment with more than one row is rejected too (see
+[What counts as a block](@ref)). A real matrix takes the matrix constructor.
 
 ## Reading a CSV
 

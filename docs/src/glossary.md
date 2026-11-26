@@ -15,3 +15,10 @@ The method comes from information retrieval, so the citations and the
 reference tests (which compare with Sakai's code) keep that tool's own words
 where they quote it. Earlier versions of this package, its issues and its pull
 requests used the words in the last column.
+
+Two more words describe how the blocks were sampled (see
+[What counts as a block](@ref)). A *cluster* is a group of blocks sampled
+together, whose responses are correlated within a treatment, such as several
+questions about one passage; the cluster then becomes the block. A *stratum*
+is a group of blocks fixed by the design, such as one subject of a benchmark;
+its blocks stay as they are.
